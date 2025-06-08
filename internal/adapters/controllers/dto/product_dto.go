@@ -45,8 +45,8 @@ type ProductMaterialDTO struct {
 	UnitAbbreviation string  `json:"unit_abbreviation"`
 }
 
-// CreateProductRequestDTO представляет запрос на создание продукции
-type CreateProductRequestDTO struct {
+// CreateProductRequest представляет запрос на создание продукции
+type CreateProductRequest struct {
 	Article         string   `json:"article" binding:"required"`
 	ProductTypeID   int      `json:"product_type_id" binding:"required"`
 	Name            string   `json:"name" binding:"required"`
@@ -55,8 +55,8 @@ type CreateProductRequestDTO struct {
 	RollWidth       *float64 `json:"roll_width" binding:"omitempty,min=0"`
 }
 
-// UpdateProductRequestDTO представляет запрос на обновление продукции
-type UpdateProductRequestDTO struct {
+// UpdateProductRequest представляет запрос на обновление продукции
+type UpdateProductRequest struct {
 	Article         *string  `json:"article"`
 	ProductTypeID   *int     `json:"product_type_id"`
 	Name            *string  `json:"name"`
@@ -121,8 +121,8 @@ func FromProductEntityWithMaterials(product *entities.Product, materials []entit
 	return dto
 }
 
-// ToEntity преобразует DTO создания в доменную сущность
-func (dto *CreateProductRequestDTO) ToEntity() *entities.Product {
+// ToEntity преобразует DTO в доменную сущность
+func (dto *CreateProductRequest) ToEntity() *entities.Product {
 	return &entities.Product{
 		Article:         dto.Article,
 		ProductTypeID:   dto.ProductTypeID,
@@ -133,8 +133,10 @@ func (dto *CreateProductRequestDTO) ToEntity() *entities.Product {
 	}
 }
 
-// UpdateEntity обновляет доменную сущность на основе DTO
-func (dto *UpdateProductRequestDTO) UpdateEntity(product *entities.Product) {
+// ToEntity преобразует DTO в доменную сущность
+func (dto *UpdateProductRequest) ToEntity(id int) *entities.Product {
+	product := &entities.Product{ID: id}
+
 	if dto.Article != nil {
 		product.Article = *dto.Article
 	}
@@ -153,4 +155,6 @@ func (dto *UpdateProductRequestDTO) UpdateEntity(product *entities.Product) {
 	if dto.RollWidth != nil {
 		product.RollWidth = dto.RollWidth
 	}
+
+	return product
 }

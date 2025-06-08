@@ -56,19 +56,19 @@ func NewCalculatorUseCase(materialRepo repositories.MaterialRepository) *Calcula
 func (uc *CalculatorUseCase) CalculateRequiredMaterial(request *entities.MaterialCalculationRequest) (int, error) {
 	// Валидация входных данных
 	if err := uc.validateCalculationRequest(request); err != nil {
-		return -1, fmt.Errorf("ошибка валидации: %w", err)
+		return 0, fmt.Errorf("ошибка валидации: %w", err)
 	}
 
 	// Получаем тип продукции
 	productType, err := uc.materialRepo.GetProductTypeByID(request.ProductTypeID)
 	if err != nil {
-		return -1, entities.NewNotFoundError("тип продукции", strconv.Itoa(request.ProductTypeID))
+		return 0, entities.NewNotFoundError("тип продукции", strconv.Itoa(request.ProductTypeID))
 	}
 
 	// Получаем тип материала
 	materialType, err := uc.materialRepo.GetMaterialTypeByID(request.MaterialTypeID)
 	if err != nil {
-		return -1, entities.NewNotFoundError("тип материала", strconv.Itoa(request.MaterialTypeID))
+		return 0, entities.NewNotFoundError("тип материала", strconv.Itoa(request.MaterialTypeID))
 	}
 
 	// Используем доменную логику для расчета

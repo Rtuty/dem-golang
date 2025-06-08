@@ -13,16 +13,16 @@ import (
 
 // CalculatorController обрабатывает HTTP запросы для калькулятора
 type CalculatorController struct {
-	calculatorUseCase *usecases.CalculatorUseCase
-	materialUseCase   *usecases.MaterialUseCase
-	productUseCase    *usecases.ProductUseCase
+	calculatorUseCase usecases.CalculatorUseCaseInterface
+	materialUseCase   usecases.MaterialUseCaseInterface
+	productUseCase    usecases.ProductUseCaseInterface
 }
 
 // NewCalculatorController создает новый контроллер калькулятора
 func NewCalculatorController(
-	calculatorUseCase *usecases.CalculatorUseCase,
-	materialUseCase *usecases.MaterialUseCase,
-	productUseCase *usecases.ProductUseCase,
+	calculatorUseCase usecases.CalculatorUseCaseInterface,
+	materialUseCase usecases.MaterialUseCaseInterface,
+	productUseCase usecases.ProductUseCaseInterface,
 ) *CalculatorController {
 	return &CalculatorController{
 		calculatorUseCase: calculatorUseCase,

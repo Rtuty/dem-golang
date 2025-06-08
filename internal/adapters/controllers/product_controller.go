@@ -12,14 +12,14 @@ import (
 
 // ProductController обрабатывает HTTP запросы для продукции
 type ProductController struct {
-	productUseCase  *usecases.ProductUseCase
-	materialUseCase *usecases.MaterialUseCase
+	productUseCase  usecases.ProductUseCaseInterface
+	materialUseCase usecases.MaterialUseCaseInterface
 }
 
 // NewProductController создает новый контроллер продукции
 func NewProductController(
-	productUseCase *usecases.ProductUseCase,
-	materialUseCase *usecases.MaterialUseCase,
+	productUseCase usecases.ProductUseCaseInterface,
+	materialUseCase usecases.MaterialUseCaseInterface,
 ) *ProductController {
 	return &ProductController{
 		productUseCase:  productUseCase,
@@ -89,9 +89,8 @@ func (c *ProductController) GetProductDetailsPage(ctx *gin.Context) {
 func (c *ProductController) GetProducts(ctx *gin.Context) {
 	products, err := c.productUseCase.GetAllProducts()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Ошибка получения списка продукции",
-		})
+		response := dto.NewErrorResponse("Ошибка получения списка продукции")
+		ctx.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -101,40 +100,37 @@ func (c *ProductController) GetProducts(ctx *gin.Context) {
 		productDTOs[i] = dto.FromProductEntity(&product)
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"products": productDTOs,
-	})
+	response := dto.NewSuccessResponse("Список продукции получен", productDTOs)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // GetProductByID возвращает продукцию по ID в JSON
 func (c *ProductController) GetProductByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Некорректный ID продукции",
-		})
+		response := dto.NewErrorResponse("Некорректный ID продукции")
+		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	product, err := c.productUseCase.GetProductByID(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": "Продукция не найдена",
-		})
+		response := dto.NewErrorResponse("Продукция не найдена")
+		ctx.JSON(http.StatusNotFound, response)
 		return
 	}
 
 	productDTO := dto.FromProductEntity(product)
-	ctx.JSON(http.StatusOK, productDTO)
+	response := dto.NewSuccessResponse("Продукция найдена", productDTO)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // CreateProduct создает новую продукцию
 func (c *ProductController) CreateProduct(ctx *gin.Context) {
-	var request dto.CreateProductRequestDTO
+	var request dto.CreateProductRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Некорректные данные запроса",
-		})
+		response := dto.NewErrorResponse("Некорректные данные запроса")
+		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -143,16 +139,13 @@ func (c *ProductController) CreateProduct(ctx *gin.Context) {
 
 	err := c.productUseCase.CreateProduct(product)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		response := dto.NewErrorResponse(err.Error())
+		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message": "Продукция успешно создана",
-		"id":      product.ID,
-	})
+	response := dto.NewSuccessResponse("Продукция успешно создана", gin.H{"id": product.ID})
+	ctx.JSON(http.StatusCreated, response)
 }
 
 // UpdateProduct обновляет продукцию
@@ -165,7 +158,7 @@ func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 
-	var request dto.UpdateProductRequestDTO
+	var request dto.UpdateProductRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": "Некорректные данные запроса",
@@ -173,17 +166,8 @@ func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 
-	// Получаем существующую продукцию
-	product, err := c.productUseCase.GetProductByID(id)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": "Продукция не найдена",
-		})
-		return
-	}
-
-	// Обновляем поля
-	request.UpdateEntity(product)
+	// Преобразуем DTO в доменную сущность
+	product := request.ToEntity(id)
 
 	err = c.productUseCase.UpdateProduct(product)
 	if err != nil {
@@ -202,21 +186,18 @@ func (c *ProductController) UpdateProduct(ctx *gin.Context) {
 func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Некорректный ID продукции",
-		})
+		response := dto.NewErrorResponse("Некорректный ID продукции")
+		ctx.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	err = c.productUseCase.DeleteProduct(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		response := dto.NewErrorResponse(err.Error())
+		ctx.JSON(http.StatusNotFound, response) // Изменил на 404 если продукция не найдена
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Продукция успешно удалена",
-	})
+	response := dto.NewSuccessResponse("Продукция успешно удалена", nil)
+	ctx.JSON(http.StatusOK, response)
 }

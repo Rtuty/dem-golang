@@ -100,3 +100,53 @@ func (m *Material) Validate() error {
 	}
 	return nil
 }
+
+// CalculateRequiredQuantity рассчитывает необходимое количество материала с учетом отходов
+func (m *Material) CalculateRequiredQuantity(baseQuantity, wastePercentage float64) (int, error) {
+	if baseQuantity < 0 {
+		return 0, NewValidationError("base_quantity", "Базовое количество не может быть отрицательным")
+	}
+
+	if wastePercentage < 0 {
+		return 0, NewValidationError("waste_percentage", "Процент отходов не может быть отрицательным")
+	}
+
+	if baseQuantity == 0 {
+		return 0, nil
+	}
+
+	// Рассчитываем с учетом отходов
+	requiredQuantity := baseQuantity * (1 + wastePercentage/100)
+
+	// Округляем в большую сторону
+	return int(requiredQuantity + 0.9999999), nil
+}
+
+// Validate проверяет валидность запроса на расчет материала
+func (r *MaterialCalculationRequest) Validate() error {
+	if r.ProductTypeID <= 0 {
+		return NewValidationError("product_type_id", "ID типа продукции должен быть больше нуля")
+	}
+
+	if r.MaterialTypeID <= 0 {
+		return NewValidationError("material_type_id", "ID типа материала должен быть больше нуля")
+	}
+
+	if r.ProductQuantity <= 0 {
+		return NewValidationError("product_quantity", "Количество продукции должно быть больше нуля")
+	}
+
+	if r.ProductParam1 < 0 {
+		return NewValidationError("product_param1", "Первый параметр продукции не может быть отрицательным")
+	}
+
+	if r.ProductParam2 < 0 {
+		return NewValidationError("product_param2", "Второй параметр продукции не может быть отрицательным")
+	}
+
+	if r.MaterialInStock < 0 {
+		return NewValidationError("material_in_stock", "Остаток материала на складе не может быть отрицательным")
+	}
+
+	return nil
+}
