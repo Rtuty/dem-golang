@@ -187,22 +187,62 @@
 </div>
 
 <script>
-// Валидация формы
-document.querySelector('.product-form').addEventListener('submit', function(e) {
-    const minPrice = parseFloat(document.getElementById('min_partner_price').value);
-    const rollWidth = document.getElementById('roll_width').value;
+// Валидация формы и расчеты
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.product-form');
+    
+    // Валидация при отправке формы
+    form.addEventListener('submit', function(e) {
+        const minPrice = parseFloat(document.getElementById('min_partner_price').value);
+        const rollWidth = document.getElementById('roll_width').value;
+        const costPrice = document.getElementById('cost_price').value;
 
-    if (minPrice < 0) {
-        e.preventDefault();
-        alert('Минимальная стоимость не может быть отрицательной');
-        return;
+        if (minPrice < 0) {
+            e.preventDefault();
+            alert('Минимальная стоимость не может быть отрицательной');
+            return;
+        }
+
+        if (rollWidth && parseFloat(rollWidth) < 0) {
+            e.preventDefault();
+            alert('Ширина рулона не может быть отрицательной');
+            return;
+        }
+
+        if (costPrice && parseFloat(costPrice) < 0) {
+            e.preventDefault();
+            alert('Себестоимость не может быть отрицательной');
+            return;
+        }
+
+        // Проверка соотношения цен
+        if (costPrice && minPrice && parseFloat(costPrice) > parseFloat(minPrice)) {
+            if (!confirm('Себестоимость превышает минимальную цену для партнера. Продолжить?')) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+
+    // Расчет объема упаковки
+    function calculatePackageVolume() {
+        const length = parseFloat(document.getElementById('package_length').value) || 0;
+        const width = parseFloat(document.getElementById('package_width').value) || 0;
+        const height = parseFloat(document.getElementById('package_height').value) || 0;
+        
+        if (length > 0 && width > 0 && height > 0) {
+            const volume = (length * width * height) / 1000000; // перевод из см³ в м³
+            console.log(`Объем упаковки: ${volume.toFixed(4)} м³`);
+        }
     }
 
-    if (rollWidth && parseFloat(rollWidth) < 0) {
-        e.preventDefault();
-        alert('Ширина рулона не может быть отрицательной');
-        return;
-    }
+    // Привязываем расчет объема к изменению размеров упаковки
+    ['package_length', 'package_width', 'package_height'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', calculatePackageVolume);
+        }
+    });
 });
 </script>
 {{end}} 

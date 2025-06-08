@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тест API удаления</title>
+</head>
+<body>
+    <h1>Тест API удаления</h1>
+    
+    <button onclick="testMaterialAPI()">Тест API материалов</button>
+    <button onclick="testProductAPI()">Тест API продуктов</button>
+    <button onclick="testDeleteMaterial()">Тест удаления материала</button>
+    <button onclick="testDeleteProduct()">Тест удаления продукта</button>
+    
+    <div id="result"></div>
+
+    <script>
+    function testMaterialAPI() {
+        fetch('http://localhost:8080/api/v1/materials')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Материалы:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Ошибка:</h3><p>' + error.message + '</p>';
+            });
+    }
+
+    function testProductAPI() {
+        fetch('http://localhost:8080/api/v1/products')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Продукты:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Ошибка:</h3><p>' + error.message + '</p>';
+            });
+    }
+
+    function testDeleteMaterial() {
+        const id = prompt('Введите ID материала для удаления:');
+        if (id) {
+            fetch(`http://localhost:8080/api/v1/materials/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => {
+                        throw new Error('Не JSON ответ: ' + text);
+                    });
+                }
+            })
+            .then(data => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Результат удаления материала:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Ошибка удаления материала:</h3><p>' + error.message + '</p>';
+            });
+        }
+    }
+
+    function testDeleteProduct() {
+        const id = prompt('Введите ID продукта для удаления:');
+        if (id) {
+            fetch(`http://localhost:8080/api/v1/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => {
+                        throw new Error('Не JSON ответ: ' + text);
+                    });
+                }
+            })
+            .then(data => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Результат удаления продукта:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = 
+                    '<h3>Ошибка удаления продукта:</h3><p>' + error.message + '</p>';
+            });
+        }
+    }
+    </script>
+</body>
+</html> 

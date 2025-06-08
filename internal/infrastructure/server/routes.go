@@ -87,5 +87,10 @@ func setupAPIRoutes(
 		{
 			calculator.POST("/calculate", calculatorController.CalculateMaterialAPI)
 		}
+
+		// Справочники API
+		api.GET("/product-types", productController.GetProductTypes)
+		api.GET("/material-types", materialController.GetMaterialTypes)
+		api.GET("/measurement-units", materialController.GetMeasurementUnits)
 	}
 }

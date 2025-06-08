@@ -355,3 +355,18 @@ func (c *ProductController) UpdateProductWeb(ctx *gin.Context) {
 	// Успешное обновление - редирект на детали продукции
 	ctx.Redirect(http.StatusFound, "/products/"+strconv.Itoa(id))
 }
+
+// GetProductTypes возвращает список типов продукции через API
+func (c *ProductController) GetProductTypes(ctx *gin.Context) {
+	productTypes, err := c.productUseCase.GetProductTypes()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Ошибка получения типов продукции: " + err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": productTypes,
+	})
+}

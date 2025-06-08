@@ -348,6 +348,36 @@ func (mc *MaterialController) DeleteMaterial(c *gin.Context) {
 	})
 }
 
+// GetMaterialTypes возвращает список типов материалов через API
+func (mc *MaterialController) GetMaterialTypes(c *gin.Context) {
+	materialTypes, err := mc.materialUseCase.GetMaterialTypes()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Ошибка получения типов материалов: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": materialTypes,
+	})
+}
+
+// GetMeasurementUnits возвращает список единиц измерения через API
+func (mc *MaterialController) GetMeasurementUnits(c *gin.Context) {
+	measurementUnits, err := mc.materialUseCase.GetMeasurementUnits()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Ошибка получения единиц измерения: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": measurementUnits,
+	})
+}
+
 // parseIDParam парсит ID из строкового параметра
 func parseIDParam(idParam string) (int, error) {
 	return strconv.Atoi(idParam)

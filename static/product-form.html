@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление продукцией - Наш декор</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab:hover {
+            background: #0056b3;
+            color: white;
+        }
+
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .result {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .product-list {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .product-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-info h3 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .product-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .product-actions {
+                margin-top: 1rem;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Управление продукцией</h1>
+            <p>Система управления производством обоев "Наш декор"</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('create')">Создать продукцию</button>
+            <button class="tab" onclick="switchTab('edit')">Редактировать продукцию</button>
+            <button class="tab" onclick="switchTab('list')">Список продукции</button>
+            <button class="tab" onclick="switchTab('test')">Тестирование API</button>
+        </div>
+
+        <!-- Форма создания продукции -->
+        <div id="create-section" class="form-section active">
+            <div class="form-container">
+                <h2>Создание новой продукции</h2>
+                <form id="create-form">
+                    <div class="form-group">
+                        <label class="form-label">Артикул *</label>
+                        <input type="text" name="article" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Тип продукции *</label>
+                        <select name="product_type_id" class="form-control" required>
+                            <option value="">Выберите тип продукции</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Наименование *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Минимальная стоимость для партнера (₽) *</label>
+                            <input type="number" name="min_partner_price" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ширина рулона (м)</label>
+                            <input type="number" name="roll_width" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Длина упаковки (см)</label>
+                            <input type="number" name="package_length" class="form-control" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ширина упаковки (см)</label>
+                            <input type="number" name="package_width" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Высота упаковки (см)</label>
+                            <input type="number" name="package_height" class="form-control" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Себестоимость (₽)</label>
+                            <input type="number" name="cost_price" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Время производства (часы)</label>
+                            <input type="number" name="production_time_hours" class="form-control" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Номер цеха</label>
+                            <input type="text" name="workshop_number" class="form-control">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Создать продукцию</button>
+                    <button type="reset" class="btn btn-secondary">Очистить форму</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Форма редактирования продукции -->
+        <div id="edit-section" class="form-section">
+            <div class="form-container">
+                <h2>Редактирование продукции</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">ID продукции для редактирования</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="number" id="edit-product-id" class="form-control" placeholder="Введите ID продукции">
+                        <button onclick="loadProductForEdit()" class="btn btn-primary">Загрузить</button>
+                    </div>
+                </div>
+
+                <form id="edit-form" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Артикул *</label>
+                        <input type="text" name="article" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Тип продукции *</label>
+                        <select name="product_type_id" class="form-control" required>
+                            <option value="">Выберите тип продукции</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Наименование *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Минимальная стоимость для партнера (₽) *</label>
+                            <input type="number" name="min_partner_price" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ширина рулона (м)</label>
+                            <input type="number" name="roll_width" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Длина упаковки (см)</label>
+                            <input type="number" name="package_length" class="form-control" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ширина упаковки (см)</label>
+                            <input type="number" name="package_width" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Высота упаковки (см)</label>
+                            <input type="number" name="package_height" class="form-control" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Себестоимость (₽)</label>
+                            <input type="number" name="cost_price" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Время производства (часы)</label>
+                            <input type="number" name="production_time_hours" class="form-control" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Номер цеха</label>
+                            <input type="text" name="workshop_number" class="form-control">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">Обновить продукцию</button>
+                    <button type="button" onclick="cancelEdit()" class="btn btn-secondary">Отмена</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список продукции -->
+        <div id="list-section" class="form-section">
+            <div class="form-container">
+                <h2>Список продукции</h2>
+                <button onclick="loadProducts()" class="btn btn-primary">Обновить список</button>
+                <div id="products-list" class="product-list" style="margin-top: 1rem;">
+                    <!-- Список будет загружен динамически -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Тестирование API -->
+        <div id="test-section" class="form-section">
+            <div class="form-container">
+                <h2>Тестирование API продукции</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button onclick="testGetProducts()" class="btn btn-primary">GET /api/v1/products</button>
+                    <button onclick="testGetProductTypes()" class="btn btn-secondary">GET /api/v1/product-types</button>
+                    <button onclick="testCreateProduct()" class="btn btn-success">POST /api/v1/products</button>
+                    <button onclick="testUpdateProduct()" class="btn btn-warning">PUT /api/v1/products/1</button>
+                    <button onclick="testDeleteProduct()" class="btn btn-danger">DELETE /api/v1/products/1</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результаты -->
+        <div id="result" class="result" style="display: none;">
+            <h3>Результат операции</h3>
+            <div id="result-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+        let currentEditId = null;
+
+        // Переключение вкладок
+        function switchTab(tabName) {
+            // Скрыть все секции
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Убрать активный класс с табов
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную секцию
+            document.getElementById(tabName + '-section').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Загрузить данные для соответствующей вкладки
+            if (tabName === 'create' || tabName === 'edit') {
+                loadProductTypes();
+            } else if (tabName === 'list') {
+                loadProducts();
+            }
+        }
+
+        // Загрузка типов продукции
+        async function loadProductTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/product-types`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const productTypes = data.data || [];
+                
+                // Обновляем оба селекта
+                const selects = document.querySelectorAll('select[name="product_type_id"]');
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Выберите тип продукции</option>';
+                    productTypes.forEach(type => {
+                        select.innerHTML += `<option value="${type.id}">${type.name}</option>`;
+                    });
+                });
+            } catch (error) {
+                showResult('Ошибка загрузки типов продукции: ' + error.message, 'error');
+            }
+        }
+
+        // Создание продукции
+        document.getElementById('create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Конвертируем числовые поля
+            ['product_type_id', 'min_partner_price', 'roll_width', 'package_length', 
+             'package_width', 'package_height', 'cost_price', 'production_time_hours'].forEach(field => {
+                if (data[field] && data[field] !== '') {
+                    data[field] = parseFloat(data[field]);
+                } else if (field !== 'product_type_id' && field !== 'min_partner_price') {
+                    delete data[field]; // Удаляем пустые необязательные поля
+                }
+            });
+            
+            try {
+                const response = await fetch(`${API_BASE}/products`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Продукция успешно создана! ID: ' + result.data.id, 'success');
+                    e.target.reset();
+                } else {
+                    showResult('Ошибка создания: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        });
+
+        // Загрузка продукции для редактирования
+        async function loadProductForEdit() {
+            const id = document.getElementById('edit-product-id').value;
+            if (!id) {
+                alert('Введите ID продукции');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/products/${id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success && result.data) {
+                    fillEditForm(result.data);
+                    currentEditId = id;
+                    document.getElementById('edit-form').style.display = 'block';
+                    showResult('Продукция загружена для редактирования', 'success');
+                } else {
+                    showResult('Продукция не найдена', 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка загрузки: ' + error.message, 'error');
+            }
+        }
+
+        // Заполнение формы редактирования
+        function fillEditForm(product) {
+            const form = document.getElementById('edit-form');
+            
+            form.querySelector('[name="article"]').value = product.article || '';
+            form.querySelector('[name="product_type_id"]').value = product.product_type_id || '';
+            form.querySelector('[name="name"]').value = product.name || '';
+            form.querySelector('[name="description"]').value = product.description || '';
+            form.querySelector('[name="min_partner_price"]').value = product.min_partner_price || '';
+            form.querySelector('[name="roll_width"]').value = product.roll_width || '';
+            form.querySelector('[name="package_length"]').value = product.package_length || '';
+            form.querySelector('[name="package_width"]').value = product.package_width || '';
+            form.querySelector('[name="package_height"]').value = product.package_height || '';
+            form.querySelector('[name="cost_price"]').value = product.cost_price || '';
+            form.querySelector('[name="production_time_hours"]').value = product.production_time_hours || '';
+            form.querySelector('[name="workshop_number"]').value = product.workshop_number || '';
+        }
+
+        // Обновление продукции
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditId) {
+                alert('Нет ID для обновления');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Конвертируем числовые поля
+            ['product_type_id', 'min_partner_price', 'roll_width', 'package_length', 
+             'package_width', 'package_height', 'cost_price', 'production_time_hours'].forEach(field => {
+                if (data[field] && data[field] !== '') {
+                    data[field] = parseFloat(data[field]);
+                } else if (field !== 'product_type_id' && field !== 'min_partner_price') {
+                    delete data[field];
+                }
+            });
+            
+            try {
+                const response = await fetch(`${API_BASE}/products/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Продукция успешно обновлена!', 'success');
+                } else {
+                    showResult('Ошибка обновления: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        });
+
+        // Отмена редактирования
+        function cancelEdit() {
+            document.getElementById('edit-form').style.display = 'none';
+            document.getElementById('edit-product-id').value = '';
+            currentEditId = null;
+        }
+
+        // Загрузка списка продукции
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_BASE}/products`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                const products = result.data || [];
+                
+                const listContainer = document.getElementById('products-list');
+                if (products.length === 0) {
+                    listContainer.innerHTML = '<div class="alert alert-info">Продукция не найдена</div>';
+                    return;
+                }
+                
+                listContainer.innerHTML = products.map(product => `
+                    <div class="product-item">
+                        <div class="product-info">
+                            <h3>${product.name} (${product.article})</h3>
+                            <p><strong>Тип:</strong> ${product.type_name || 'Не указан'}</p>
+                            <p><strong>Цена:</strong> ${product.min_partner_price}₽</p>
+                            ${product.roll_width ? `<p><strong>Ширина:</strong> ${product.roll_width}м</p>` : ''}
+                        </div>
+                        <div class="product-actions">
+                            <button onclick="editProduct(${product.id})" class="btn btn-warning">Редактировать</button>
+                            <button onclick="deleteProduct(${product.id})" class="btn btn-danger">Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                showResult('Ошибка загрузки списка: ' + error.message, 'error');
+            }
+        }
+
+        // Редактирование продукции из списка
+        function editProduct(id) {
+            switchTab('edit');
+            document.getElementById('edit-product-id').value = id;
+            loadProductForEdit();
+        }
+
+        // Удаление продукции
+        async function deleteProduct(id) {
+            if (!confirm('Вы уверены, что хотите удалить эту продукцию?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Продукция успешно удалена!', 'success');
+                    loadProducts(); // Обновляем список
+                } else {
+                    showResult('Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        }
+
+        // Тестовые функции API
+        async function testGetProducts() {
+            await testApiCall('GET', '/products', null, 'Получение списка продукции');
+        }
+
+        async function testGetProductTypes() {
+            await testApiCall('GET', '/product-types', null, 'Получение типов продукции');
+        }
+
+        async function testCreateProduct() {
+            const testProduct = {
+                article: 'TEST-' + Date.now(),
+                product_type_id: 1,
+                name: 'Тестовая продукция',
+                description: 'Описание тестовой продукции',
+                min_partner_price: 100.00
+            };
+            await testApiCall('POST', '/products', testProduct, 'Создание тестовой продукции');
+        }
+
+        async function testUpdateProduct() {
+            const testUpdate = {
+                name: 'Обновленная тестовая продукция',
+                min_partner_price: 150.00
+            };
+            await testApiCall('PUT', '/products/1', testUpdate, 'Обновление продукции с ID 1');
+        }
+
+        async function testDeleteProduct() {
+            if (confirm('Это удалит продукцию с ID 1. Продолжить?')) {
+                await testApiCall('DELETE', '/products/1', null, 'Удаление продукции с ID 1');
+            }
+        }
+
+        // Универсальная функция для тестирования API
+        async function testApiCall(method, endpoint, data, description) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const result = await response.json();
+                
+                showResult(
+                    `<strong>${description}</strong><br>
+                     <strong>Статус:</strong> ${response.status}<br>
+                     <strong>Результат:</strong><br>
+                     <pre>${JSON.stringify(result, null, 2)}</pre>`,
+                    response.ok ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult(`<strong>${description}</strong><br>Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        // Показ результатов
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('result-content');
+            
+            contentDiv.innerHTML = `<div class="alert alert-${type === 'success' ? 'success' : 'error'}">${message}</div>`;
+            resultDiv.style.display = 'block';
+            
+            // Автоматически скрыть через 10 секунд для успешных операций
+            if (type === 'success') {
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                }, 10000);
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProductTypes();
+        });
+    </script>
+</body>
+</html> 

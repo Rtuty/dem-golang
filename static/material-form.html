@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление материалами - Наш декор</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #28a745;
+            color: white;
+        }
+
+        .tab:hover {
+            background: #1e7e34;
+            color: white;
+        }
+
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40,167,69,0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .result {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .material-list {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .material-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .material-info h3 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .material-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .low-stock {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #ffc107;
+        }
+
+        .stock-ok {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .stock-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .stock-danger {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .material-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .material-actions {
+                margin-top: 1rem;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Управление материалами</h1>
+            <p>Система управления материалами производства обоев "Наш декор"</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('create')">Создать материал</button>
+            <button class="tab" onclick="switchTab('edit')">Редактировать материал</button>
+            <button class="tab" onclick="switchTab('list')">Список материалов</button>
+            <button class="tab" onclick="switchTab('test')">Тестирование API</button>
+        </div>
+
+        <!-- Форма создания материала -->
+        <div id="create-section" class="form-section active">
+            <div class="form-container">
+                <h2>Создание нового материала</h2>
+                <form id="create-form">
+                    <div class="form-group">
+                        <label class="form-label">Артикул *</label>
+                        <input type="text" name="article" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Тип материала *</label>
+                        <select name="material_type_id" class="form-control" required>
+                            <option value="">Выберите тип материала</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Наименование *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Единица измерения *</label>
+                        <select name="measurement_unit_id" class="form-control" required>
+                            <option value="">Выберите единицу измерения</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Количество в упаковке *</label>
+                            <input type="number" name="package_quantity" class="form-control" step="0.001" min="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Стоимость за единицу (₽) *</label>
+                            <input type="number" name="cost_per_unit" class="form-control" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Остаток на складе</label>
+                            <input type="number" name="stock_quantity" class="form-control" step="0.001" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Минимальный остаток</label>
+                            <input type="number" name="min_stock_quantity" class="form-control" step="0.001" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Путь к изображению</label>
+                        <input type="text" name="image_path" class="form-control" placeholder="/static/images/materials/example.jpg">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Создать материал</button>
+                    <button type="reset" class="btn btn-secondary">Очистить форму</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Форма редактирования материала -->
+        <div id="edit-section" class="form-section">
+            <div class="form-container">
+                <h2>Редактирование материала</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">ID материала для редактирования</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="number" id="edit-material-id" class="form-control" placeholder="Введите ID материала">
+                        <button onclick="loadMaterialForEdit()" class="btn btn-primary">Загрузить</button>
+                    </div>
+                </div>
+
+                <form id="edit-form" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Артикул *</label>
+                        <input type="text" name="article" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Тип материала *</label>
+                        <select name="material_type_id" class="form-control" required>
+                            <option value="">Выберите тип материала</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Наименование *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Единица измерения *</label>
+                        <select name="measurement_unit_id" class="form-control" required>
+                            <option value="">Выберите единицу измерения</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Количество в упаковке *</label>
+                            <input type="number" name="package_quantity" class="form-control" step="0.001" min="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Стоимость за единицу (₽) *</label>
+                            <input type="number" name="cost_per_unit" class="form-control" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Остаток на складе</label>
+                            <input type="number" name="stock_quantity" class="form-control" step="0.001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Минимальный остаток</label>
+                            <input type="number" name="min_stock_quantity" class="form-control" step="0.001" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Путь к изображению</label>
+                        <input type="text" name="image_path" class="form-control">
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">Обновить материал</button>
+                    <button type="button" onclick="cancelEdit()" class="btn btn-secondary">Отмена</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список материалов -->
+        <div id="list-section" class="form-section">
+            <div class="form-container">
+                <h2>Список материалов</h2>
+                <button onclick="loadMaterials()" class="btn btn-primary">Обновить список</button>
+                <div id="materials-list" class="material-list" style="margin-top: 1rem;">
+                    <!-- Список будет загружен динамически -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Тестирование API -->
+        <div id="test-section" class="form-section">
+            <div class="form-container">
+                <h2>Тестирование API материалов</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button onclick="testGetMaterials()" class="btn btn-primary">GET /api/v1/materials</button>
+                    <button onclick="testGetMaterialTypes()" class="btn btn-secondary">GET /api/v1/material-types</button>
+                    <button onclick="testGetMeasurementUnits()" class="btn btn-secondary">GET /api/v1/measurement-units</button>
+                    <button onclick="testCreateMaterial()" class="btn btn-success">POST /api/v1/materials</button>
+                    <button onclick="testUpdateMaterial()" class="btn btn-warning">PUT /api/v1/materials/1</button>
+                    <button onclick="testDeleteMaterial()" class="btn btn-danger">DELETE /api/v1/materials/1</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результаты -->
+        <div id="result" class="result" style="display: none;">
+            <h3>Результат операции</h3>
+            <div id="result-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+        let currentEditId = null;
+
+        // Переключение вкладок
+        function switchTab(tabName) {
+            // Скрыть все секции
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Убрать активный класс с табов
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показать выбранную секцию
+            document.getElementById(tabName + '-section').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Загрузить данные для соответствующей вкладки
+            if (tabName === 'create' || tabName === 'edit') {
+                loadMaterialTypes();
+                loadMeasurementUnits();
+            } else if (tabName === 'list') {
+                loadMaterials();
+            }
+        }
+
+        // Загрузка типов материалов
+        async function loadMaterialTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/material-types`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const materialTypes = data.data || [];
+                
+                // Обновляем оба селекта
+                const selects = document.querySelectorAll('select[name="material_type_id"]');
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Выберите тип материала</option>';
+                    materialTypes.forEach(type => {
+                        select.innerHTML += `<option value="${type.id}">${type.name}</option>`;
+                    });
+                });
+            } catch (error) {
+                console.warn('Не удалось загрузить типы материалов:', error.message);
+                // Заполняем фиктивными данными для демонстрации
+                const selects = document.querySelectorAll('select[name="material_type_id"]');
+                selects.forEach(select => {
+                    select.innerHTML = `
+                        <option value="">Выберите тип материала</option>
+                        <option value="1">Основа</option>
+                        <option value="2">Покрытие</option>
+                        <option value="3">Клеящие материалы</option>
+                        <option value="4">Красители</option>
+                        <option value="5">Упаковочные материалы</option>
+                    `;
+                });
+            }
+        }
+
+        // Загрузка единиц измерения
+        async function loadMeasurementUnits() {
+            try {
+                const response = await fetch(`${API_BASE}/measurement-units`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const units = data.data || [];
+                
+                // Обновляем оба селекта
+                const selects = document.querySelectorAll('select[name="measurement_unit_id"]');
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Выберите единицу измерения</option>';
+                    units.forEach(unit => {
+                        select.innerHTML += `<option value="${unit.id}">${unit.name} (${unit.abbreviation})</option>`;
+                    });
+                });
+            } catch (error) {
+                console.warn('Не удалось загрузить единицы измерения:', error.message);
+                // Заполняем фиктивными данными для демонстрации
+                const selects = document.querySelectorAll('select[name="measurement_unit_id"]');
+                selects.forEach(select => {
+                    select.innerHTML = `
+                        <option value="">Выберите единицу измерения</option>
+                        <option value="1">метр (м)</option>
+                        <option value="2">килограмм (кг)</option>
+                        <option value="3">штука (шт)</option>
+                        <option value="4">литр (л)</option>
+                        <option value="5">квадратный метр (м²)</option>
+                        <option value="6">рулон (рул)</option>
+                    `;
+                });
+            }
+        }
+
+        // Создание материала
+        document.getElementById('create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Конвертируем числовые поля
+            ['material_type_id', 'measurement_unit_id', 'package_quantity', 'cost_per_unit', 
+             'stock_quantity', 'min_stock_quantity'].forEach(field => {
+                if (data[field] && data[field] !== '') {
+                    data[field] = parseFloat(data[field]);
+                } else if (['material_type_id', 'measurement_unit_id', 'package_quantity', 'cost_per_unit'].includes(field)) {
+                    // Обязательные поля, не удаляем
+                } else {
+                    delete data[field]; // Удаляем пустые необязательные поля
+                }
+            });
+            
+            // Удаляем пустое описание и image_path
+            if (!data.description) delete data.description;
+            if (!data.image_path) delete data.image_path;
+            
+            try {
+                const response = await fetch(`${API_BASE}/materials`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Материал успешно создан! ID: ' + result.data.id, 'success');
+                    e.target.reset();
+                } else {
+                    showResult('Ошибка создания: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        });
+
+        // Загрузка материала для редактирования
+        async function loadMaterialForEdit() {
+            const id = document.getElementById('edit-material-id').value;
+            if (!id) {
+                alert('Введите ID материала');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/materials/${id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (result.success && result.data) {
+                    fillEditForm(result.data);
+                    currentEditId = id;
+                    document.getElementById('edit-form').style.display = 'block';
+                    showResult('Материал загружен для редактирования', 'success');
+                } else {
+                    showResult('Материал не найден', 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка загрузки: ' + error.message, 'error');
+            }
+        }
+
+        // Заполнение формы редактирования
+        function fillEditForm(material) {
+            const form = document.getElementById('edit-form');
+            
+            form.querySelector('[name="article"]').value = material.article || '';
+            form.querySelector('[name="material_type_id"]').value = material.material_type_id || '';
+            form.querySelector('[name="name"]').value = material.name || '';
+            form.querySelector('[name="description"]').value = material.description || '';
+            form.querySelector('[name="measurement_unit_id"]').value = material.measurement_unit_id || '';
+            form.querySelector('[name="package_quantity"]').value = material.package_quantity || '';
+            form.querySelector('[name="cost_per_unit"]').value = material.cost_per_unit || '';
+            form.querySelector('[name="stock_quantity"]').value = material.stock_quantity || '';
+            form.querySelector('[name="min_stock_quantity"]').value = material.min_stock_quantity || '';
+            form.querySelector('[name="image_path"]').value = material.image_path || '';
+        }
+
+        // Обновление материала
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditId) {
+                alert('Нет ID для обновления');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Конвертируем числовые поля
+            ['material_type_id', 'measurement_unit_id', 'package_quantity', 'cost_per_unit', 
+             'stock_quantity', 'min_stock_quantity'].forEach(field => {
+                if (data[field] && data[field] !== '') {
+                    data[field] = parseFloat(data[field]);
+                } else if (['material_type_id', 'measurement_unit_id', 'package_quantity', 'cost_per_unit'].includes(field)) {
+                    // Обязательные поля, не удаляем
+                } else {
+                    delete data[field];
+                }
+            });
+            
+            // Удаляем пустое описание и image_path
+            if (!data.description) delete data.description;
+            if (!data.image_path) delete data.image_path;
+            
+            try {
+                const response = await fetch(`${API_BASE}/materials/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Материал успешно обновлен!', 'success');
+                } else {
+                    showResult('Ошибка обновления: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        });
+
+        // Отмена редактирования
+        function cancelEdit() {
+            document.getElementById('edit-form').style.display = 'none';
+            document.getElementById('edit-material-id').value = '';
+            currentEditId = null;
+        }
+
+        // Загрузка списка материалов
+        async function loadMaterials() {
+            try {
+                const response = await fetch(`${API_BASE}/materials`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                const materials = result.data || [];
+                
+                const listContainer = document.getElementById('materials-list');
+                if (materials.length === 0) {
+                    listContainer.innerHTML = '<div class="alert alert-info">Материалы не найдены</div>';
+                    return;
+                }
+                
+                listContainer.innerHTML = materials.map(material => {
+                    const stockStatus = material.stock_quantity < material.min_stock_quantity ? 'stock-danger' : 'stock-ok';
+                    const lowStockClass = material.stock_quantity < material.min_stock_quantity ? 'low-stock' : '';
+                    
+                    return `
+                        <div class="material-item ${lowStockClass}">
+                            <div class="material-info">
+                                <h3>${material.name} (${material.article})</h3>
+                                <p><strong>Тип:</strong> ${material.material_type ? material.material_type.name : 'Не указан'}</p>
+                                <p><strong>Стоимость:</strong> ${material.cost_per_unit}₽ за ${material.measurement_unit ? material.measurement_unit.abbreviation : 'ед.'}</p>
+                                <p><strong>Остаток:</strong> <span class="${stockStatus}">${material.stock_quantity} / ${material.min_stock_quantity}</span></p>
+                                ${material.stock_quantity < material.min_stock_quantity ? 
+                                    '<p class="stock-danger"><strong>⚠️ Низкий остаток!</strong></p>' : ''}
+                            </div>
+                            <div class="material-actions">
+                                <button onclick="editMaterial(${material.id})" class="btn btn-warning">Редактировать</button>
+                                <button onclick="deleteMaterial(${material.id})" class="btn btn-danger">Удалить</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                showResult('Ошибка загрузки списка: ' + error.message, 'error');
+            }
+        }
+
+        // Редактирование материала из списка
+        function editMaterial(id) {
+            switchTab('edit');
+            document.getElementById('edit-material-id').value = id;
+            loadMaterialForEdit();
+        }
+
+        // Удаление материала
+        async function deleteMaterial(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот материал?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/materials/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('Материал успешно удален!', 'success');
+                    loadMaterials(); // Обновляем список
+                } else {
+                    showResult('Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showResult('Ошибка сети: ' + error.message, 'error');
+            }
+        }
+
+        // Тестовые функции API
+        async function testGetMaterials() {
+            await testApiCall('GET', '/materials', null, 'Получение списка материалов');
+        }
+
+        async function testGetMaterialTypes() {
+            await testApiCall('GET', '/material-types', null, 'Получение типов материалов');
+        }
+
+        async function testGetMeasurementUnits() {
+            await testApiCall('GET', '/measurement-units', null, 'Получение единиц измерения');
+        }
+
+        async function testCreateMaterial() {
+            const testMaterial = {
+                article: 'TEST-' + Date.now(),
+                material_type_id: 1,
+                name: 'Тестовый материал',
+                description: 'Описание тестового материала',
+                measurement_unit_id: 1,
+                package_quantity: 10.0,
+                cost_per_unit: 50.00,
+                stock_quantity: 100.0,
+                min_stock_quantity: 10.0
+            };
+            await testApiCall('POST', '/materials', testMaterial, 'Создание тестового материала');
+        }
+
+        async function testUpdateMaterial() {
+            const testUpdate = {
+                name: 'Обновленный тестовый материал',
+                cost_per_unit: 75.00
+            };
+            await testApiCall('PUT', '/materials/1', testUpdate, 'Обновление материала с ID 1');
+        }
+
+        async function testDeleteMaterial() {
+            if (confirm('Это удалит материал с ID 1. Продолжить?')) {
+                await testApiCall('DELETE', '/materials/1', null, 'Удаление материала с ID 1');
+            }
+        }
+
+        // Универсальная функция для тестирования API
+        async function testApiCall(method, endpoint, data, description) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const result = await response.json();
+                
+                showResult(
+                    `<strong>${description}</strong><br>
+                     <strong>Статус:</strong> ${response.status}<br>
+                     <strong>Результат:</strong><br>
+                     <pre>${JSON.stringify(result, null, 2)}</pre>`,
+                    response.ok ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult(`<strong>${description}</strong><br>Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        // Показ результатов
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('result-content');
+            
+            contentDiv.innerHTML = `<div class="alert alert-${type === 'success' ? 'success' : 'error'}">${message}</div>`;
+            resultDiv.style.display = 'block';
+            
+            // Автоматически скрыть через 10 секунд для успешных операций
+            if (type === 'success') {
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                }, 10000);
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMaterialTypes();
+            loadMeasurementUnits();
+        });
+    </script>
+</body>
+</html> 

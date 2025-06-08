@@ -112,25 +112,5 @@
 }
 </style>
 
-<script>
-function deleteMaterial(id) {
-    if (confirm('Вы уверены, что хотите удалить этот материал? Это действие нельзя отменить.')) {
-        fetch(`/api/v1/materials/${id}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Материал успешно удален');
-                location.reload();
-            } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-            }
-        })
-        .catch(error => {
-            alert('Ошибка удаления: ' + error.message);
-        });
-    }
-}
-</script>
+
 {{end}} 

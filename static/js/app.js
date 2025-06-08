@@ -75,17 +75,22 @@ function confirmDelete(productId) {
 function deleteProduct(id) {
     showLoading(true);
     
-    fetch(`/api/products/${id}`, {
+    fetch(`/api/v1/products/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
         },
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         showLoading(false);
         
-        if (data.message) {
+        if (data.success || data.message) {
             showNotification('Продукция успешно удалена', 'success');
             // Удаляем строку из таблицы
             const row = document.querySelector(`tr[data-id="${id}"]`);
@@ -95,6 +100,52 @@ function deleteProduct(id) {
             
             // Если больше нет продукции, показываем пустое состояние
             const tbody = document.querySelector('.products-table tbody');
+            if (tbody && tbody.children.length === 0) {
+                location.reload();
+            }
+        } else {
+            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        showNotification('Ошибка удаления: ' + error.message, 'error');
+    });
+}
+
+// Удаление материала через API
+function deleteMaterial(id) {
+    if (!confirm('Вы уверены, что хотите удалить этот материал?')) {
+        return;
+    }
+    
+    showLoading(true);
+    
+    fetch(`/api/v1/materials/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        showLoading(false);
+        
+        if (data.success || data.message) {
+            showNotification('Материал успешно удален', 'success');
+            // Удаляем строку из таблицы
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) {
+                row.remove();
+            }
+            
+            // Если больше нет материалов, показываем пустое состояние
+            const tbody = document.querySelector('.materials-table tbody');
             if (tbody && tbody.children.length === 0) {
                 location.reload();
             }

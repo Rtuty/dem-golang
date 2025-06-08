@@ -53,25 +53,5 @@
 </div>
 {{end}}
 
-<script>
-function deleteProduct(id) {
-    if (confirm('Вы уверены, что хотите удалить эту продукцию?')) {
-        fetch(`/api/v1/products/${id}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Продукция успешно удалена');
-                location.reload();
-            } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-            }
-        })
-        .catch(error => {
-            alert('Ошибка удаления: ' + error.message);
-        });
-    }
-}
-</script>
+
 {{end}} 
