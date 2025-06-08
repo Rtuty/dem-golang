@@ -1,122 +1,189 @@
 package main
 
 import (
-	"html/template"
+	"context"
+	"errors"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"wallpaper-system/internal/config"
-	"wallpaper-system/internal/database"
-	"wallpaper-system/internal/handlers"
-	"wallpaper-system/internal/repository"
-	"wallpaper-system/internal/services"
+	// Слой инфраструктуры
+	"wallpaper-system/internal/infrastructure/config"
+	"wallpaper-system/internal/infrastructure/database"
+	"wallpaper-system/internal/infrastructure/server"
 
+	// Слой адаптеров
+	"wallpaper-system/internal/adapters/controllers"
+	"wallpaper-system/internal/adapters/repositories"
+
+	// Слой вариантов использования
+	"wallpaper-system/internal/usecases"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
+// @title Wallpaper System API
+// @version 2.0
+// @description API для системы управления производством обоев "Наш декор" с чистой архитектурой
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+
 func main() {
-	// Загрузка конфигурации
+	// Загружаем конфигурацию
 	cfg := config.Load()
 
-	// Подключение к базе данных
-	db, err := database.New(&cfg.Database)
-	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
-	}
-	defer db.Close()
-
-	// Инициализация репозиториев
-	productRepo := repository.NewProductRepository(db.GetConnection())
-	materialRepo := repository.NewMaterialRepository(db.GetConnection())
-
-	// Инициализация сервисов
-	productService := services.NewProductService(productRepo, materialRepo)
-	materialService := services.NewMaterialService(materialRepo)
-
-	// Инициализация хендлеров
-	productHandler := handlers.NewProductHandler(productService, materialService)
-	materialHandler := handlers.NewMaterialHandler(materialService, productService)
-
-	// Настройка Gin
-	if gin.Mode() == gin.ReleaseMode {
+	// Устанавливаем режим Gin в зависимости от окружения
+	if os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Инициализируем логгер
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("Ошибка инициализации логгера: %v", err)
+	}
+	defer logger.Sync()
+
+	// Устанавливаем глобальный логгер
+	zap.ReplaceGlobals(logger)
+	sugar := logger.Sugar()
+
+	sugar.Infow("Запуск приложения с чистой архитектурой",
+		"name", "Wallpaper System",
+		"version", "2.0.0",
+		"environment", os.Getenv("APP_ENV"),
+	)
+
+	// Подключаемся к базе данных (слой инфраструктуры)
+	db, err := database.New(&cfg.Database)
+	if err != nil {
+		sugar.Fatalw("Ошибка подключения к базе данных", "error", err)
+	}
+	defer db.Close()
+
+	// Инициализируем репозитории (слой адаптеров)
+	productRepo := repositories.NewProductRepository(db.GetConnection())
+	materialRepo := repositories.NewMaterialRepository(db.GetConnection())
+
+	// Инициализируем варианты использования (слой бизнес-логики)
+	productUseCase := usecases.NewProductUseCase(productRepo, materialRepo)
+	materialUseCase := usecases.NewMaterialUseCase(materialRepo)
+	calculatorUseCase := usecases.NewCalculatorUseCase(materialRepo)
+
+	// Инициализируем контроллеры (слой адаптеров)
+	productController := controllers.NewProductController(productUseCase, materialUseCase)
+	calculatorController := controllers.NewCalculatorController(calculatorUseCase, materialUseCase, productUseCase)
+
+	// Создаем роутер Gin
 	router := gin.Default()
 
-	// Загрузка HTML шаблонов с функциями
-	router.SetFuncMap(template.FuncMap{
+	// Настраиваем CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	router.Use(cors.New(corsConfig))
+
+	// Загружаем шаблоны
+	router.LoadHTMLGlob("templates/*.html")
+
+	// Подключаем статические файлы
+	router.Static("/static", "./static")
+
+	// Определяем функции для шаблонов
+	router.SetFuncMap(map[string]interface{}{
 		"add": func(a, b float64) float64 {
 			return a + b
 		},
-		"eq": func(a, b interface{}) bool {
-			return a == b
-		},
 	})
-	router.LoadHTMLGlob("templates/*.html")
 
-	// Статические файлы
-	router.Static("/static", "./static")
+	// Настраиваем маршруты (слой инфраструктуры)
+	server.SetupRoutes(router, productController, calculatorController)
 
-	// Маршруты для веб-интерфейса
-	setupWebRoutes(router, productHandler, materialHandler)
-
-	// API маршруты
-	setupAPIRoutes(router, productHandler, materialHandler, productService)
-
-	// Запуск сервера
-	serverAddr := cfg.Server.GetServerAddress()
-	log.Printf("Сервер запущен на %s", serverAddr)
-	log.Printf("Откройте браузер и перейдите по адресу: http://%s", serverAddr)
-
-	if err := router.Run(serverAddr); err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
+	// Создаем HTTP сервер
+	srv := &http.Server{
+		Addr:         fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
 	}
+
+	// Запускаем сервер в горутине
+	go func() {
+		sugar.Infow("Запуск HTTP сервера", "address", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			sugar.Fatalw("Ошибка запуска HTTP сервера", "error", err)
+		}
+	}()
+
+	// Выводим информацию о запуске
+	printBanner(cfg)
+
+	// Ожидаем сигнал для graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	sugar.Info("Получен сигнал завершения, останавливаем сервер...")
+
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		sugar.Fatalw("Ошибка при остановке сервера", "error", err)
+	}
+
+	sugar.Info("Сервер успешно остановлен")
 }
 
-// setupWebRoutes настраивает маршруты для веб-интерфейса
-func setupWebRoutes(router *gin.Engine, productHandler *handlers.ProductHandler, materialHandler *handlers.MaterialHandler) {
-	// Главная страница - список продукции
-	router.GET("/", productHandler.GetProducts)
+// printBanner выводит баннер приложения
+func printBanner(cfg *config.Config) {
+	banner := fmt.Sprintf(`
+╔══════════════════════════════════════════════════════════╗
+║               Wallpaper System v2.0                      ║
+║              Чистая архитектура                           ║
+║                  Окружение: %s                      ║
+╚══════════════════════════════════════════════════════════╝
 
-	// Продукция
-	router.GET("/products", productHandler.GetProducts)
-	router.GET("/products/new", productHandler.ShowCreateProductForm)
-	router.POST("/products/new", productHandler.CreateProduct)
-	router.GET("/products/:id", productHandler.GetProduct)
-	router.GET("/products/:id/edit", productHandler.ShowEditProductForm)
-	router.POST("/products/:id/edit", productHandler.UpdateProduct)
-	router.GET("/products/:id/materials", productHandler.GetProductMaterials)
+🏭 Система управления производством обоев "Наш декор"
+🌐 Адрес: http://%s:%s
+📊 Архитектурные слои:
+   • Domain Layer        - Бизнес-сущности и правила
+   • Use Cases Layer     - Варианты использования
+   • Interface Adapters  - Контроллеры и репозитории  
+   • Infrastructure      - Веб, БД, конфигурация
 
-	// Материалы
-	router.GET("/materials", materialHandler.GetMaterials)
+📋 Доступные эндпоинты:
+   • GET  /                          - Главная страница
+   • GET  /products                  - Список продукции
+   • GET  /products/:id              - Детали продукции
+   • GET  /calculator                - Калькулятор материалов
+   • POST /calculator                - Расчет материалов
+   • API  /api/v1/products           - REST API продукции
+   • API  /api/v1/calculator         - REST API калькулятора
 
-	// Калькулятор материалов
-	router.GET("/calculator", materialHandler.ShowCalculatorForm)
-	router.POST("/calculator", materialHandler.CalculateMaterialForm)
-}
+`,
+		os.Getenv("APP_ENV"),
+		cfg.Server.Host,
+		cfg.Server.Port,
+	)
 
-// setupAPIRoutes настраивает API маршруты
-func setupAPIRoutes(router *gin.Engine, productHandler *handlers.ProductHandler, materialHandler *handlers.MaterialHandler, productService *services.ProductService) {
-	api := router.Group("/api")
-
-	// API для продукции
-	products := api.Group("/products")
-	{
-		products.GET("/", func(c *gin.Context) {
-			// Возвращаем JSON список продукции
-			productsList, err := productService.GetAllProducts()
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, gin.H{"products": productsList})
-		})
-		products.DELETE("/:id", productHandler.DeleteProduct)
-	}
-
-	// API для калькулятора материалов
-	calculator := api.Group("/calculator")
-	{
-		calculator.POST("/", materialHandler.CalculateMaterial)
-	}
+	fmt.Print(banner)
 }

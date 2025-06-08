@@ -25,7 +25,7 @@ func New(cfg *config.DatabaseConfig) (*DB, error) {
 	}
 
 	// Проверка подключения
-	if err := conn.Ping(); err != nil {
+	if err = conn.Ping(); err != nil {
 		return nil, fmt.Errorf("ошибка проверки подключения к базе данных: %w", err)
 	}
 

@@ -1,149 +1,206 @@
+# Wallpaper System Makefile
+# Поддержка Windows, Linux и macOS
+
+.PHONY: help build run test clean install migrate dev docker-build docker-run docker-stop fmt lint tidy
+
+# Определяем операционную систему
+UNAME_S := $(shell uname -s 2>nul || echo Windows)
+ifeq ($(UNAME_S),Windows)
+	EXE := .exe
+	RM := del /Q
+	RMDIR := rmdir /S /Q
+	MKDIR := mkdir
+	NULL := nul
+else
+	EXE :=
+	RM := rm -f
+	RMDIR := rm -rf
+	MKDIR := mkdir -p
+	NULL := /dev/null
+endif
+
 # Переменные
 APP_NAME := wallpaper-system
-DOCKER_IMAGE := $(APP_NAME):latest
-GO_VERSION := 1.21
+BUILD_DIR := build
+BINARY := $(BUILD_DIR)/$(APP_NAME)$(EXE)
+MAIN_PATH := ./cmd/server
+MIGRATE_PATH := ./cmd/migrate
 
-# Цвета для вывода
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-RED := \033[0;31m
-NC := \033[0m # No Color
+# Go параметры
+GOCMD := go
+GOBUILD := $(GOCMD) build
+GORUN := $(GOCMD) run
+GOTEST := $(GOCMD) test
+GOCLEAN := $(GOCMD) clean
+GOGET := $(GOCMD) get
+GOMOD := $(GOCMD) mod
+GOFMT := $(GOCMD) fmt
 
-.PHONY: help build run test clean docker-build docker-run docker-stop docker-clean dev-setup migrate-up migrate-down tools lint fmt
+# Версия и билд информация
+VERSION := $(shell git describe --tags --always --dirty 2>$(NULL) || echo "unknown")
+BUILD_TIME := $(shell date +%Y%m%d-%H%M%S)
+GIT_COMMIT := $(shell git rev-parse --short HEAD 2>$(NULL) || echo "unknown")
 
-# Показать справку
-help:
-	@echo "$(GREEN)Доступные команды:$(NC)"
-	@echo "  $(YELLOW)build$(NC)         - Собрать приложение локально"
-	@echo "  $(YELLOW)run$(NC)           - Запустить приложение локально"
-	@echo "  $(YELLOW)test$(NC)          - Запустить тесты"
-	@echo "  $(YELLOW)clean$(NC)         - Очистить сборочные файлы"
+# LDFLAGS для встраивания информации о сборке
+LDFLAGS := -ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.gitCommit=$(GIT_COMMIT)"
+
+# По умолчанию показываем справку
+help: ## Показать справку
+	@echo "=== Wallpaper System Build Commands ==="
 	@echo ""
-	@echo "  $(YELLOW)docker-build$(NC)  - Собрать Docker образ"
-	@echo "  $(YELLOW)docker-run$(NC)    - Запустить с Docker Compose"
-	@echo "  $(YELLOW)docker-stop$(NC)   - Остановить Docker контейнеры"
-	@echo "  $(YELLOW)docker-clean$(NC)  - Очистить Docker ресурсы"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "  $(YELLOW)dev-setup$(NC)     - Настроить среду разработки"
-	@echo "  $(YELLOW)migrate-up$(NC)    - Выполнить миграции"
-	@echo "  $(YELLOW)migrate-down$(NC)  - Откатить миграции"
-	@echo "  $(YELLOW)tools$(NC)         - Запустить дополнительные инструменты"
-	@echo ""
-	@echo "  $(YELLOW)lint$(NC)          - Проверить код линтером"
-	@echo "  $(YELLOW)fmt$(NC)           - Форматировать код"
+	@echo "Примеры использования:"
+	@echo "  make install      # Установить зависимости"
+	@echo "  make dev          # Запустить в режиме разработки"
+	@echo "  make build        # Собрать приложение"
+	@echo "  make test         # Запустить тесты"
+	@echo "  make docker-run   # Запустить с Docker"
 
-# Локальная сборка
-build:
-	@echo "$(GREEN)Сборка приложения...$(NC)"
-	go mod tidy
-	go build -o bin/server ./cmd/server
-	go build -o bin/migrate ./cmd/migrate
-	@echo "$(GREEN)Сборка завершена!$(NC)"
+install: ## Установить зависимости
+	@echo "Установка зависимостей..."
+	$(GOGET) -v ./...
+	$(GOMOD) tidy
+	$(GOMOD) download
+	@echo "Зависимости установлены успешно!"
 
-# Локальный запуск
-run: build
-	@echo "$(GREEN)Запуск приложения...$(NC)"
-	./bin/server
+build: ## Собрать приложение
+	@echo "Сборка приложения..."
+	@if not exist $(BUILD_DIR) $(MKDIR) $(BUILD_DIR)
+	$(GOBUILD) $(LDFLAGS) -o $(BINARY) $(MAIN_PATH)
+	@echo "Приложение собрано: $(BINARY)"
 
-# Запуск тестов
-test:
-	@echo "$(GREEN)Запуск тестов...$(NC)"
-	go test -v ./...
+build-all: ## Собрать для всех платформ
+	@echo "Сборка для всех платформ..."
+	@if not exist $(BUILD_DIR) $(MKDIR) $(BUILD_DIR)
+	
+	@echo "Сборка для Windows..."
+	SET GOOS=windows&& SET GOARCH=amd64&& $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe $(MAIN_PATH)
+	
+	@echo "Сборка для Linux..."
+	SET GOOS=linux&& SET GOARCH=amd64&& $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64 $(MAIN_PATH)
+	
+	@echo "Сборка для macOS..."
+	SET GOOS=darwin&& SET GOARCH=amd64&& $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 $(MAIN_PATH)
+	
+	@echo "Сборка завершена!"
 
-# Очистка
-clean:
-	@echo "$(GREEN)Очистка сборочных файлов...$(NC)"
-	rm -rf bin/
-	go clean
-	@echo "$(GREEN)Очистка завершена!$(NC)"
+run: build ## Собрать и запустить приложение
+	@echo "Запуск приложения..."
+	$(BINARY)
 
-# Docker команды
-docker-build:
-	@echo "$(GREEN)Сборка Docker образа...$(NC)"
-	docker build -t $(DOCKER_IMAGE) .
-	@echo "$(GREEN)Docker образ собран!$(NC)"
+dev: ## Запустить в режиме разработки (без сборки)
+	@echo "Запуск в режиме разработки..."
+	SET APP_ENV=development&& SET LOG_LEVEL=debug&& $(GORUN) $(MAIN_PATH)
 
-docker-run:
-	@echo "$(GREEN)Запуск с Docker Compose...$(NC)"
-	docker-compose up --build -d
-	@echo "$(GREEN)Приложение доступно на http://localhost:8080$(NC)"
+test: ## Запустить тесты
+	@echo "Запуск тестов..."
+	$(GOTEST) -v -race -coverprofile=coverage.out ./...
+	@echo "Тесты завершены!"
 
-docker-stop:
-	@echo "$(GREEN)Остановка Docker контейнеров...$(NC)"
+test-coverage: test ## Запустить тесты с отчетом о покрытии
+	@echo "Генерация отчета о покрытии..."
+	$(GOCMD) tool cover -html=coverage.out -o coverage.html
+	@echo "Отчет сохранен в coverage.html"
+
+bench: ## Запустить бенчмарки
+	@echo "Запуск бенчмарков..."
+	$(GOTEST) -bench=. -benchmem ./...
+
+migrate-up: ## Применить миграции БД
+	@echo "Применение миграций..."
+	$(GORUN) $(MIGRATE_PATH) up
+
+migrate-down: ## Откатить миграции БД
+	@echo "Откат миграций..."
+	$(GORUN) $(MIGRATE_PATH) down
+
+migrate-create: ## Создать новую миграцию (make migrate-create NAME=add_users_table)
+	@echo "Создание миграции: $(NAME)"
+	$(GORUN) $(MIGRATE_PATH) create $(NAME)
+
+clean: ## Очистить сборочные файлы
+	@echo "Очистка..."
+	$(GOCLEAN)
+	@if exist $(BUILD_DIR) $(RMDIR) $(BUILD_DIR)
+	@if exist coverage.out $(RM) coverage.out
+	@if exist coverage.html $(RM) coverage.html
+	@echo "Очистка завершена!"
+
+fmt: ## Форматировать код
+	@echo "Форматирование кода..."
+	$(GOFMT) ./...
+	@echo "Форматирование завершено!"
+
+lint: ## Запустить линтер (требует установки golangci-lint)
+	@echo "Запуск линтера..."
+	@golangci-lint run || echo "Установите golangci-lint: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+
+tidy: ## Очистить go.mod
+	@echo "Очистка зависимостей..."
+	$(GOMOD) tidy
+	@echo "Зависимости очищены!"
+
+update: ## Обновить зависимости
+	@echo "Обновление зависимостей..."
+	$(GOGET) -u ./...
+	$(GOMOD) tidy
+	@echo "Зависимости обновлены!"
+
+docker-build: ## Собрать Docker образ
+	@echo "Сборка Docker образа..."
+	docker build -t $(APP_NAME):latest .
+	@echo "Docker образ собран!"
+
+docker-run: docker-build ## Запустить с Docker Compose
+	@echo "Запуск с Docker Compose..."
+	docker-compose up --build
+
+docker-stop: ## Остановить Docker Compose
+	@echo "Остановка Docker Compose..."
 	docker-compose down
 
-docker-clean:
-	@echo "$(GREEN)Очистка Docker ресурсов...$(NC)"
+docker-clean: ## Очистить Docker ресурсы
+	@echo "Очистка Docker ресурсов..."
 	docker-compose down -v --remove-orphans
-	docker system prune -f
-	@echo "$(GREEN)Docker ресурсы очищены!$(NC)"
+	docker image prune -f
 
-# Разработка
-dev-setup:
-	@echo "$(GREEN)Настройка среды разработки...$(NC)"
-	go mod download
-	go install golang.org/x/tools/cmd/goimports@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	@echo "$(GREEN)Среда разработки настроена!$(NC)"
+# Задачи для разработки
+setup: install migrate-up ## Полная настройка проекта для разработки
+	@echo "Проект настроен для разработки!"
 
-# Миграции
-migrate-up:
-	@echo "$(GREEN)Выполнение миграций...$(NC)"
-	go run cmd/migrate/main.go up
+dev-deps: ## Установить зависимости для разработки
+	@echo "Установка инструментов разработки..."
+	$(GOGET) -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	$(GOGET) -u github.com/swaggo/swag/cmd/swag
+	@echo "Инструменты разработки установлены!"
 
-migrate-down:
-	@echo "$(GREEN)Откат миграций...$(NC)"
-	go run cmd/migrate/main.go down
+swagger: ## Генерация Swagger документации
+	@echo "Генерация Swagger документации..."
+	@swag init -g cmd/server/main.go -o docs || echo "Установите swag: go install github.com/swaggo/swag/cmd/swag@latest"
 
-migrate-status:
-	@echo "$(GREEN)Статус миграций:$(NC)"
-	go run cmd/migrate/main.go status
+# Задачи для продакшена
+prod-build: ## Сборка для продакшена
+	@echo "Сборка для продакшена..."
+	@if not exist $(BUILD_DIR) $(MKDIR) $(BUILD_DIR)
+	SET CGO_ENABLED=0&& SET GOOS=linux&& $(GOBUILD) -a -installsuffix cgo $(LDFLAGS) -o $(BUILD_DIR)/$(APP_NAME)-prod $(MAIN_PATH)
+	@echo "Продакшен сборка готова!"
 
-# Дополнительные инструменты
-tools:
-	@echo "$(GREEN)Запуск дополнительных инструментов...$(NC)"
-	docker-compose --profile tools up -d adminer
-	@echo "$(GREEN)Adminer доступен на http://localhost:8081$(NC)"
+# Информация о проекте
+info: ## Показать информацию о проекте
+	@echo "=== Информация о проекте ==="
+	@echo "Название: $(APP_NAME)"
+	@echo "Версия: $(VERSION)"
+	@echo "Коммит: $(GIT_COMMIT)"
+	@echo "Время сборки: $(BUILD_TIME)"
+	@echo "Go версия: $(shell $(GOCMD) version)"
+	@echo "Платформа: $(UNAME_S)"
 
-# Линтер
-lint:
-	@echo "$(GREEN)Проверка кода линтером...$(NC)"
-	golangci-lint run ./...
+# Задачи для CI/CD
+ci: fmt lint test ## Задачи для CI (форматирование, линтинг, тесты)
+	@echo "CI задачи выполнены успешно!"
 
-# Форматирование
-fmt:
-	@echo "$(GREEN)Форматирование кода...$(NC)"
-	go fmt ./...
-	goimports -w .
-
-# Полный перезапуск
-restart: docker-stop docker-run
-
-# Логи Docker
-logs:
-	docker-compose logs -f app
-
-# Логи базы данных
-db-logs:
-	docker-compose logs -f postgres
-
-# Подключение к базе данных
-db-connect:
-	docker-compose exec postgres psql -U wallpaper_user -d wallpaper_system
-
-# Бэкап базы данных
-db-backup:
-	@echo "$(GREEN)Создание бэкапа базы данных...$(NC)"
-	docker-compose exec postgres pg_dump -U wallpaper_user wallpaper_system > backup_$(shell date +%Y%m%d_%H%M%S).sql
-	@echo "$(GREEN)Бэкап создан!$(NC)"
-
-# Проверка состояния
-status:
-	@echo "$(GREEN)Состояние сервисов:$(NC)"
-	docker-compose ps
-
-# Быстрый старт
-quick-start: docker-clean docker-run
-	@echo "$(GREEN)Быстрый старт завершен!$(NC)"
-	@echo "$(YELLOW)Приложение: http://localhost:8080$(NC)"
-	@echo "$(YELLOW)База данных: localhost:5432$(NC)" 
+# Алиасы для удобства
+run-dev: dev ## Алиас для dev
+start: run ## Алиас для run
+stop: docker-stop ## Алиас для docker-stop 
