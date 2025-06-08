@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Наш декор - Система управления производством обоев</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="icon" href="/static/images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="/static/images/logo.png" alt="Наш декор" class="logo-img">
+                    <h1>Наш декор</h1>
+                </div>
+                <nav class="nav">
+                    <a href="/" class="nav-link active">Главная</a>
+                    <a href="/web/products" class="nav-link">Продукция</a>
+                    <a href="/web/materials" class="nav-link">Материалы</a>
+                    <a href="/web/calculator" class="nav-link">Калькулятор</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <section class="hero">
+                <h2>Система управления производством обоев</h2>
+                <p>Добро пожаловать в систему управления производством компании "Наш декор"</p>
+            </section>
+
+            <section class="features">
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📋</div>
+                        <h3>Управление продукцией</h3>
+                        <p>Просмотр, добавление и редактирование данных о продукции</p>
+                        <a href="/web/products" class="btn btn-primary">Перейти к продукции</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🧱</div>
+                        <h3>Материалы</h3>
+                        <p>Управление материалами для производства обоев</p>
+                        <a href="/web/materials" class="btn btn-primary">Управление материалами</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🧮</div>
+                        <h3>Калькулятор</h3>
+                        <p>Расчет стоимости продукции и потребности в материалах</p>
+                        <a href="/web/calculator" class="btn btn-primary">Открыть калькулятор</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="quick-stats">
+                <h3>Быстрая статистика</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="products-count">-</div>
+                        <div class="stat-label">Видов продукции</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="materials-count">-</div>
+                        <div class="stat-label">Материалов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="low-stock-count">-</div>
+                        <div class="stat-label">Низкий остаток</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Наш декор. Система управления производством обоев.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 

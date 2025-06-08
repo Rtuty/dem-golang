@@ -1,122 +1,152 @@
 package main
 
 import (
-	"html/template"
+	"context"
+	"errors"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"wallpaper-system/internal/config"
-	"wallpaper-system/internal/database"
-	"wallpaper-system/internal/handlers"
-	"wallpaper-system/internal/repository"
-	"wallpaper-system/internal/services"
+	"wallpaper-system/internal/infrastructure/config"
+	"wallpaper-system/internal/infrastructure/logger"
+	"wallpaper-system/internal/infrastructure/server"
 
-	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
+// @title Wallpaper System API
+// @version 1.0
+// @description API для системы управления производством обоев "Наш декор"
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+
 func main() {
-	// Загрузка конфигурации
-	cfg := config.Load()
-
-	// Подключение к базе данных
-	db, err := database.New(&cfg.Database)
+	// Загружаем конфигурацию
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
-	}
-	defer db.Close()
-
-	// Инициализация репозиториев
-	productRepo := repository.NewProductRepository(db.GetConnection())
-	materialRepo := repository.NewMaterialRepository(db.GetConnection())
-
-	// Инициализация сервисов
-	productService := services.NewProductService(productRepo, materialRepo)
-	materialService := services.NewMaterialService(materialRepo)
-
-	// Инициализация хендлеров
-	productHandler := handlers.NewProductHandler(productService, materialService)
-	materialHandler := handlers.NewMaterialHandler(materialService, productService)
-
-	// Настройка Gin
-	if gin.Mode() == gin.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode)
+		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 
-	router := gin.Default()
+	// Инициализируем логгер
+	zapLogger, err := logger.NewZapLogger(cfg.Logger)
+	if err != nil {
+		log.Fatalf("Ошибка инициализации логгера: %v", err)
+	}
 
-	// Загрузка HTML шаблонов с функциями
-	router.SetFuncMap(template.FuncMap{
-		"add": func(a, b float64) float64 {
-			return a + b
-		},
-		"eq": func(a, b interface{}) bool {
-			return a == b
-		},
-	})
-	router.LoadHTMLGlob("templates/*.html")
+	defer zapLogger.Sync()
 
-	// Статические файлы
-	router.Static("/static", "./static")
+	// Устанавливаем глобальный логгер
+	zap.ReplaceGlobals(zapLogger)
+	sugaredLogger := zap.S()
 
-	// Маршруты для веб-интерфейса
-	setupWebRoutes(router, productHandler, materialHandler)
+	sugaredLogger.Infow("Запуск приложения",
+		"name", cfg.App.Name,
+		"version", cfg.App.Version,
+		"environment", cfg.App.Environment,
+	)
 
-	// API маршруты
-	setupAPIRoutes(router, productHandler, materialHandler, productService)
+	// Инициализируем сервер с зависимостями
+	srv, cleanup, err := server.NewServer(cfg, sugaredLogger)
+	if err != nil {
+		sugaredLogger.Fatalf("Ошибка инициализации сервера: %v", err)
+	}
+	defer cleanup()
 
-	// Запуск сервера
-	serverAddr := cfg.Server.GetServerAddress()
-	log.Printf("Сервер запущен на %s", serverAddr)
-	log.Printf("Откройте браузер и перейдите по адресу: http://%s", serverAddr)
+	// Создаем HTTP сервер
+	httpServer := &http.Server{
+		Addr:         cfg.Server.GetServerAddress(),
+		Handler:      srv,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
+	}
 
-	if err := router.Run(serverAddr); err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
+	// Запускаем сервер в горутине
+	go func() {
+		sugaredLogger.Infow("Запуск HTTP сервера",
+			"address", httpServer.Addr,
+		)
+
+		if err = httpServer.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
+			sugaredLogger.Fatalw("Ошибка запуска HTTP сервера", "error", err)
+		}
+	}()
+
+	// Ожидаем сигнал для graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	<-quit
+	sugaredLogger.Info("Получен сигнал завершения, останавливаем сервер...")
+
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	defer cancel()
+
+	if err = httpServer.Shutdown(ctx); err != nil {
+		sugaredLogger.Errorw("Ошибка при остановке сервера", "error", err)
+		return
+	}
+
+	sugaredLogger.Info("Сервер успешно остановлен")
+}
+
+// setupEnvironment настраивает окружение приложения
+func setupEnvironment(cfg *config.Config) {
+	// Устанавливаем часовой пояс
+	if cfg.App.Timezone != "" {
+		if location, err := time.LoadLocation(cfg.App.Timezone); err == nil {
+			time.Local = location
+		}
+	}
+
+	// Устанавливаем переменные окружения для Gin
+	if cfg.App.IsProduction() {
+		os.Setenv("GIN_MODE", "release")
+		return
+	}
+
+	if cfg.App.IsDevelopment() {
+		os.Setenv("GIN_MODE", "debug")
 	}
 }
 
-// setupWebRoutes настраивает маршруты для веб-интерфейса
-func setupWebRoutes(router *gin.Engine, productHandler *handlers.ProductHandler, materialHandler *handlers.MaterialHandler) {
-	// Главная страница - список продукции
-	router.GET("/", productHandler.GetProducts)
+// printBanner выводит баннер приложения
+func printBanner(cfg *config.Config) {
+	banner := fmt.Sprintf(`
+╔══════════════════════════════════════════════════════════╗
+║                    %s                    ║
+║                     Версия: %s                        ║
+║                  Окружение: %s                ║
+╚══════════════════════════════════════════════════════════╝
 
-	// Продукция
-	router.GET("/products", productHandler.GetProducts)
-	router.GET("/products/new", productHandler.ShowCreateProductForm)
-	router.POST("/products/new", productHandler.CreateProduct)
-	router.GET("/products/:id", productHandler.GetProduct)
-	router.GET("/products/:id/edit", productHandler.ShowEditProductForm)
-	router.POST("/products/:id/edit", productHandler.UpdateProduct)
-	router.GET("/products/:id/materials", productHandler.GetProductMaterials)
+🏭 Система управления производством обоев "Наш декор"
+🌐 Адрес: http://%s
+📊 Доступные эндпоинты:
+   • GET  /                   - Главная страница
+   • GET  /api/v1/products    - API продукции
+   • GET  /api/v1/materials   - API материалов
+   • POST /api/v1/calculator  - API калькулятора
 
-	// Материалы
-	router.GET("/materials", materialHandler.GetMaterials)
+`,
+		cfg.App.Name,
+		cfg.App.Version,
+		cfg.App.Environment,
+		cfg.Server.GetServerAddress(),
+	)
 
-	// Калькулятор материалов
-	router.GET("/calculator", materialHandler.ShowCalculatorForm)
-	router.POST("/calculator", materialHandler.CalculateMaterialForm)
-}
-
-// setupAPIRoutes настраивает API маршруты
-func setupAPIRoutes(router *gin.Engine, productHandler *handlers.ProductHandler, materialHandler *handlers.MaterialHandler, productService *services.ProductService) {
-	api := router.Group("/api")
-
-	// API для продукции
-	products := api.Group("/products")
-	{
-		products.GET("/", func(c *gin.Context) {
-			// Возвращаем JSON список продукции
-			productsList, err := productService.GetAllProducts()
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, gin.H{"products": productsList})
-		})
-		products.DELETE("/:id", productHandler.DeleteProduct)
-	}
-
-	// API для калькулятора материалов
-	calculator := api.Group("/calculator")
-	{
-		calculator.POST("/", materialHandler.CalculateMaterial)
-	}
+	fmt.Print(banner)
 }

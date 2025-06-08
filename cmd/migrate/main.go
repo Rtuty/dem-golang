@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -110,30 +111,30 @@ func runMigrationsUp(db *sql.DB) error {
 		log.Printf("Выполнение миграции: %s", file)
 
 		// Читаем содержимое файла миграции
-		content, err := os.ReadFile(filepath.Join("migrations", file))
-		if err != nil {
-			return fmt.Errorf("ошибка чтения файла миграции %s: %w", file, err)
+		content, rRrr := os.ReadFile(filepath.Join("migrations", file))
+		if rRrr != nil {
+			return fmt.Errorf("ошибка чтения файла миграции %s: %w", file, rRrr)
 		}
 
 		// Выполняем миграцию в транзакции
-		tx, err := db.Begin()
-		if err != nil {
-			return fmt.Errorf("ошибка начала транзакции: %w", err)
+		tx, txErr := db.Begin()
+		if txErr != nil {
+			return fmt.Errorf("ошибка начала транзакции: %w", txErr)
 		}
 
 		// Выполняем SQL из файла миграции
-		if _, err := tx.Exec(string(content)); err != nil {
+		if _, err = tx.Exec(string(content)); err != nil {
 			tx.Rollback()
 			return fmt.Errorf("ошибка выполнения миграции %s: %w", file, err)
 		}
 
 		// Записываем информацию о выполненной миграции
-		if _, err := tx.Exec("INSERT INTO schema_migrations (version) VALUES ($1)", version); err != nil {
+		if _, err = tx.Exec("INSERT INTO schema_migrations (version) VALUES ($1)", version); err != nil {
 			tx.Rollback()
 			return fmt.Errorf("ошибка записи статуса миграции %s: %w", file, err)
 		}
 
-		if err := tx.Commit(); err != nil {
+		if err = tx.Commit(); err != nil {
 			return fmt.Errorf("ошибка подтверждения транзакции для миграции %s: %w", file, err)
 		}
 
@@ -195,13 +196,13 @@ func runMigrationsDown(db *sql.DB) error {
 	}
 
 	// Выполняем SQL отката
-	if _, err := tx.Exec(string(content)); err != nil {
+	if _, err = tx.Exec(string(content)); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("ошибка выполнения отката %s: %w", downFile, err)
 	}
 
 	// Удаляем запись о миграции
-	if _, err := tx.Exec("DELETE FROM schema_migrations WHERE version = $1", lastVersion); err != nil {
+	if _, err = tx.Exec("DELETE FROM schema_migrations WHERE version = $1", lastVersion); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("ошибка удаления записи миграции %s: %w", lastVersion, err)
 	}
@@ -263,10 +264,12 @@ func getAppliedMigrations(db *sql.DB) (map[string]bool, error) {
 
 func getLastAppliedMigration(db *sql.DB) (string, error) {
 	var version string
+
 	err := db.QueryRow("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1").Scan(&version)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
+
 	return version, err
 }
 
