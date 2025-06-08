@@ -1,0 +1,197 @@
+{{template "base.html" .}}
+{{define "content"}}
+<div class="page-header">
+    <h2>{{.title}}</h2>
+    <a href="/materials" class="btn btn-secondary">← Назад к списку</a>
+</div>
+
+{{if .error}}
+<div class="alert alert-danger">
+    {{.error}}
+</div>
+{{end}}
+
+<div class="form-container">
+    <form method="POST" action="{{if .isEdit}}/materials/{{.material.ID}}{{else}}/materials{{end}}">
+        <div class="form-group">
+            <label for="article" class="form-label">Артикул *</label>
+            <input 
+                type="text" 
+                id="article" 
+                name="article" 
+                class="form-control" 
+                value="{{if .material}}{{.material.Article}}{{end}}" 
+                required
+            >
+        </div>
+
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="material_type_id" class="form-label">Тип материала *</label>
+                <select id="material_type_id" name="material_type_id" class="form-control" required>
+                    <option value="">Выберите тип материала</option>
+                    {{range .materialTypes}}
+                    <option value="{{.ID}}" 
+                        {{if and $.material (eq $.material.MaterialTypeID .ID)}}selected{{end}}>
+                        {{.Name}} (брак {{printf "%.1f" .WastePercentage}}%)
+                    </option>
+                    {{end}}
+                </select>
+            </div>
+
+            <div class="form-group form-group-half">
+                <label for="measurement_unit_id" class="form-label">Единица измерения *</label>
+                <select id="measurement_unit_id" name="measurement_unit_id" class="form-control" required>
+                    <option value="">Выберите единицу</option>
+                    {{range .measurementUnits}}
+                    <option value="{{.ID}}" 
+                        {{if and $.material (eq $.material.MeasurementUnitID .ID)}}selected{{end}}>
+                        {{.Name}} ({{.Symbol}})
+                    </option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="name" class="form-label">Наименование *</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="form-control" 
+                value="{{if .material}}{{.material.Name}}{{end}}" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Описание</label>
+            <textarea 
+                id="description" 
+                name="description" 
+                class="form-control" 
+                rows="3"
+            >{{if .material}}{{.material.Description}}{{end}}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="package_quantity" class="form-label">Количество в упаковке *</label>
+                <input 
+                    type="number" 
+                    id="package_quantity" 
+                    name="package_quantity" 
+                    class="form-control" 
+                    value="{{if .material}}{{printf "%.3f" .material.PackageQuantity}}{{end}}" 
+                    step="0.001" 
+                    min="0"
+                    required
+                >
+            </div>
+
+            <div class="form-group form-group-half">
+                <label for="cost_per_unit" class="form-label">Стоимость за единицу (₽) *</label>
+                <input 
+                    type="number" 
+                    id="cost_per_unit" 
+                    name="cost_per_unit" 
+                    class="form-control" 
+                    value="{{if .material}}{{printf "%.2f" .material.CostPerUnit}}{{end}}" 
+                    step="0.01" 
+                    min="0"
+                    required
+                >
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="stock_quantity" class="form-label">Остаток на складе</label>
+                <input 
+                    type="number" 
+                    id="stock_quantity" 
+                    name="stock_quantity" 
+                    class="form-control" 
+                    value="{{if .material}}{{printf "%.3f" .material.StockQuantity}}{{else}}0{{end}}" 
+                    step="0.001" 
+                    min="0"
+                >
+            </div>
+
+            <div class="form-group form-group-half">
+                <label for="min_stock_quantity" class="form-label">Минимальный остаток</label>
+                <input 
+                    type="number" 
+                    id="min_stock_quantity" 
+                    name="min_stock_quantity" 
+                    class="form-control" 
+                    value="{{if .material}}{{printf "%.3f" .material.MinStockQuantity}}{{else}}0{{end}}" 
+                    step="0.001" 
+                    min="0"
+                >
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="image_path" class="form-label">Путь к изображению</label>
+            <input 
+                type="text" 
+                id="image_path" 
+                name="image_path" 
+                class="form-control" 
+                value="{{if .material}}{{.material.ImagePath}}{{end}}" 
+                placeholder="/static/images/materials/material.jpg"
+            >
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {{if .isEdit}}Сохранить изменения{{else}}Создать материал{{end}}
+            </button>
+            <a href="/materials" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Автоматическое вычисление стоимости упаковки
+document.addEventListener('DOMContentLoaded', function() {
+    const packageQuantity = document.getElementById('package_quantity');
+    const costPerUnit = document.getElementById('cost_per_unit');
+    
+    function updatePackageCost() {
+        const quantity = parseFloat(packageQuantity.value) || 0;
+        const unitCost = parseFloat(costPerUnit.value) || 0;
+        const packageCost = quantity * unitCost;
+        
+        // Можно добавить поле для отображения стоимости упаковки
+        console.log('Стоимость упаковки:', packageCost.toFixed(2));
+    }
+    
+    packageQuantity.addEventListener('input', updatePackageCost);
+    costPerUnit.addEventListener('input', updatePackageCost);
+    
+    // Валидация формы
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let hasErrors = false;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.style.borderColor = '#dc3545';
+                hasErrors = true;
+            } else {
+                field.style.borderColor = '';
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            alert('Пожалуйста, заполните все обязательные поля');
+        }
+    });
+});
+</script>
+{{end}} 

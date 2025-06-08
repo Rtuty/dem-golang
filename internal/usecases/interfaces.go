@@ -16,7 +16,11 @@ type ProductUseCaseInterface interface {
 type MaterialUseCaseInterface interface {
 	GetAllMaterials() ([]entities.Material, error)
 	GetMaterialByID(id int) (*entities.Material, error)
+	CreateMaterial(material *entities.Material) error
+	UpdateMaterial(material *entities.Material) error
+	DeleteMaterial(id int) error
 	GetMaterialTypes() ([]entities.MaterialType, error)
+	GetMeasurementUnits() ([]entities.MeasurementUnit, error)
 	GetMaterialsForProduct(productID int) ([]entities.Material, error)
 }
 

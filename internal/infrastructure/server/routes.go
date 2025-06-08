@@ -42,6 +42,11 @@ func setupWebRoutes(
 
 	// Материалы
 	router.GET("/materials", materialController.GetMaterialsPage)
+	router.GET("/materials/new", materialController.GetCreateMaterialPage)
+	router.POST("/materials", materialController.CreateMaterialWeb)
+	router.GET("/materials/:id/edit", materialController.GetEditMaterialPage)
+	router.POST("/materials/:id", materialController.UpdateMaterialWeb)
+	router.GET("/materials/:id", materialController.GetMaterialDetailsPage)
 
 	// Калькулятор
 	router.GET("/calculator", calculatorController.GetCalculatorPage)
@@ -72,6 +77,9 @@ func setupAPIRoutes(
 		{
 			materials.GET("", materialController.GetMaterials)
 			materials.GET("/:id", materialController.GetMaterialByID)
+			materials.POST("", materialController.CreateMaterial)
+			materials.PUT("/:id", materialController.UpdateMaterial)
+			materials.DELETE("/:id", materialController.DeleteMaterial)
 		}
 
 		// Калькулятор API

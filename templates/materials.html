@@ -1,7 +1,10 @@
 {{define "content"}}
 <div class="page-header">
     <h2>Список материалов</h2>
-    <a href="/" class="btn btn-secondary">← Назад к продукции</a>
+    <div class="page-header-actions">
+        <a href="/materials/new" class="btn btn-primary">Добавить материал</a>
+        <a href="/" class="btn btn-secondary">← Назад к продукции</a>
+    </div>
 </div>
 
 {{if .materials}}
@@ -17,6 +20,7 @@
                 <th>Мин. остаток</th>
                 <th>Единица измерения</th>
                 <th>Процент брака (%)</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
@@ -38,6 +42,11 @@
                 <td class="material-min-stock">{{printf "%.3f" .MinStockQuantity}}</td>
                 <td class="material-unit">{{.MeasurementUnit.Abbreviation}}</td>
                 <td class="material-waste">{{printf "%.1f" .MaterialType.WastePercentage}}</td>
+                <td class="material-actions">
+                    <a href="/materials/{{.ID}}" class="btn btn-sm btn-info">Детали</a>
+                    <a href="/materials/{{.ID}}/edit" class="btn btn-sm btn-warning">Редактировать</a>
+                    <button onclick="deleteMaterial({{.ID}})" class="btn btn-sm btn-danger">Удалить</button>
+                </td>
             </tr>
             {{end}}
         </tbody>
@@ -102,4 +111,26 @@
     color: #2c3e50;
 }
 </style>
+
+<script>
+function deleteMaterial(id) {
+    if (confirm('Вы уверены, что хотите удалить этот материал? Это действие нельзя отменить.')) {
+        fetch(`/api/v1/materials/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Материал успешно удален');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            alert('Ошибка удаления: ' + error.message);
+        });
+    }
+}
+</script>
 {{end}} 
