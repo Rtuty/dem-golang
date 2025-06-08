@@ -11,11 +11,17 @@ import (
 	"syscall"
 	"time"
 
-	"wallpaper-system/internal/config"
-	"wallpaper-system/internal/database"
-	"wallpaper-system/internal/handlers"
-	"wallpaper-system/internal/repository"
-	"wallpaper-system/internal/services"
+	// Слой инфраструктуры
+	"wallpaper-system/internal/infrastructure/config"
+	"wallpaper-system/internal/infrastructure/database"
+	"wallpaper-system/internal/infrastructure/server"
+
+	// Слой адаптеров
+	"wallpaper-system/internal/adapters/controllers"
+	"wallpaper-system/internal/adapters/repositories"
+
+	// Слой вариантов использования
+	"wallpaper-system/internal/usecases"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -23,8 +29,8 @@ import (
 )
 
 // @title Wallpaper System API
-// @version 1.0
-// @description API для системы управления производством обоев "Наш декор"
+// @version 2.0
+// @description API для системы управления производством обоев "Наш декор" с чистой архитектурой
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -57,32 +63,31 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	sugar := logger.Sugar()
 
-	sugar.Infow("Запуск приложения",
+	sugar.Infow("Запуск приложения с чистой архитектурой",
 		"name", "Wallpaper System",
-		"version", "1.0.0",
+		"version", "2.0.0",
 		"environment", os.Getenv("APP_ENV"),
 	)
 
-	// Подключаемся к базе данных
+	// Подключаемся к базе данных (слой инфраструктуры)
 	db, err := database.New(&cfg.Database)
 	if err != nil {
 		sugar.Fatalw("Ошибка подключения к базе данных", "error", err)
 	}
 	defer db.Close()
 
-	// Инициализируем репозитории
-	productRepo := repository.NewProductRepository(db.GetConnection())
-	materialRepo := repository.NewMaterialRepository(db.GetConnection())
+	// Инициализируем репозитории (слой адаптеров)
+	productRepo := repositories.NewProductRepository(db.GetConnection())
+	materialRepo := repositories.NewMaterialRepository(db.GetConnection())
 
-	// Инициализируем сервисы
-	productService := services.NewProductService(productRepo, materialRepo)
-	materialService := services.NewMaterialService(materialRepo)
-	calculatorService := services.NewCalculatorService(materialRepo, productRepo)
+	// Инициализируем варианты использования (слой бизнес-логики)
+	productUseCase := usecases.NewProductUseCase(productRepo, materialRepo)
+	materialUseCase := usecases.NewMaterialUseCase(materialRepo)
+	calculatorUseCase := usecases.NewCalculatorUseCase(materialRepo)
 
-	// Инициализируем хендлеры
-	productHandler := handlers.NewProductHandler(productService, materialService)
-	materialHandler := handlers.NewMaterialHandler(materialService, productService)
-	calculatorHandler := handlers.NewCalculatorHandler(calculatorService, productService, materialService)
+	// Инициализируем контроллеры (слой адаптеров)
+	productController := controllers.NewProductController(productUseCase, materialUseCase)
+	calculatorController := controllers.NewCalculatorController(calculatorUseCase, materialUseCase, productUseCase)
 
 	// Создаем роутер Gin
 	router := gin.Default()
@@ -107,8 +112,8 @@ func main() {
 		},
 	})
 
-	// Настраиваем маршруты
-	handlers.SetupRoutes(router, productHandler, materialHandler, calculatorHandler)
+	// Настраиваем маршруты (слой инфраструктуры)
+	server.SetupRoutes(router, productController, calculatorController)
 
 	// Создаем HTTP сервер
 	srv := &http.Server{
@@ -152,21 +157,27 @@ func main() {
 func printBanner(cfg *config.Config) {
 	banner := fmt.Sprintf(`
 ╔══════════════════════════════════════════════════════════╗
-║                  Wallpaper System                        ║
-║                     Версия: 1.0.0                        ║
+║               Wallpaper System v2.0                      ║
+║              Чистая архитектура                           ║
 ║                  Окружение: %s                      ║
 ╚══════════════════════════════════════════════════════════╝
 
 🏭 Система управления производством обоев "Наш декор"
 🌐 Адрес: http://%s:%s
-📊 Доступные эндпоинты:
-   • GET  /                          - Список продукции
+📊 Архитектурные слои:
+   • Domain Layer        - Бизнес-сущности и правила
+   • Use Cases Layer     - Варианты использования
+   • Interface Adapters  - Контроллеры и репозитории  
+   • Infrastructure      - Веб, БД, конфигурация
+
+📋 Доступные эндпоинты:
+   • GET  /                          - Главная страница
    • GET  /products                  - Список продукции
    • GET  /products/:id              - Детали продукции
-   • GET  /products/:id/materials    - Материалы для продукции
-   • GET  /products/new              - Добавление продукции
-   • GET  /products/:id/edit         - Редактирование продукции
    • GET  /calculator                - Калькулятор материалов
+   • POST /calculator                - Расчет материалов
+   • API  /api/v1/products           - REST API продукции
+   • API  /api/v1/calculator         - REST API калькулятора
 
 `,
 		os.Getenv("APP_ENV"),
