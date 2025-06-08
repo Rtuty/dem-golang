@@ -1,0 +1,97 @@
+services:
+  # База данных PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: wallpaper_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wallpaper_system
+      POSTGRES_USER: wallpaper_user
+      POSTGRES_PASSWORD: wallpaper_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - wallpaper_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallpaper_user -d wallpaper_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Миграции базы данных
+  migrate:
+    build: .
+    container_name: wallpaper_migrate
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: wallpaper_user
+      DB_PASSWORD: wallpaper_pass
+      DB_NAME: wallpaper_system
+      DB_SSLMODE: disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wallpaper_network
+    command: ["./migrate", "up"]
+    restart: "no"
+
+  # Веб-приложение
+  app:
+    build: .
+    container_name: wallpaper_app
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: wallpaper_user
+      DB_PASSWORD: wallpaper_pass
+      DB_NAME: wallpaper_system
+      DB_SSLMODE: disable
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      GIN_MODE: release
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - wallpaper_network
+    volumes:
+      - ./static:/app/static:ro
+      - ./templates:/app/templates:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Дополнительный сервис для разработки (опционально)
+  adminer:
+    image: adminer:4.8.1
+    container_name: wallpaper_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    networks:
+      - wallpaper_network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  wallpaper_network:
+    driver: bridge 

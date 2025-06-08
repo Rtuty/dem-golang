@@ -1,0 +1,110 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build artifacts
+bin/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Temporary folders
+tmp/
+temp/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup files
+*.sql
+backup_*
+
+# Docker
+.dockerignore
+
+# Air (live reload tool)
+.air.toml
+tmp/
+
+# Local configuration override files
+config.local.yml
+config.local.yaml
+config.local.json
+
+# Test files
+testdata/output/
+
+# Documentation build
+docs/_build/
+
+# Vendor (if using)
+vendor/
+
+# Go modules (uncomment if using go modules and want to commit the vendor directory)
+# vendor/ 

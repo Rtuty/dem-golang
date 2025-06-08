@@ -1,0 +1,127 @@
+{{define "content"}}
+<div class="page-header">
+    <h2>
+        {{if .isEdit}}
+            Редактировать продукцию
+        {{else}}
+            Добавить продукцию
+        {{end}}
+    </h2>
+    <a href="/" class="btn btn-secondary">← Назад к списку</a>
+</div>
+
+{{if .error}}
+<div class="alert alert-danger">
+    {{.error}}
+</div>
+{{end}}
+
+<div class="form-container">
+    <form method="POST" class="product-form">
+        <div class="form-group">
+            <label for="article" class="form-label">Артикул*</label>
+            <input 
+                type="text" 
+                id="article" 
+                name="article" 
+                class="form-control" 
+                value="{{if .product}}{{.product.Article}}{{end}}" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="product_type_id" class="form-label">Тип продукции*</label>
+            <select id="product_type_id" name="product_type_id" class="form-control" required>
+                <option value="">Выберите тип продукции</option>
+                {{range .productTypes}}
+                <option value="{{.ID}}" 
+                    {{if $.product}}{{if eq .ID $.product.ProductTypeID}}selected{{end}}{{end}}>
+                    {{.Name}}
+                </option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="name" class="form-label">Наименование*</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="form-control" 
+                value="{{if .product}}{{.product.Name}}{{end}}" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Описание</label>
+            <textarea 
+                id="description" 
+                name="description" 
+                class="form-control" 
+                rows="3"
+            >{{if .product}}{{if .product.Description}}{{.product.Description}}{{end}}{{end}}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="min_partner_price" class="form-label">Минимальная стоимость для партнера (₽)*</label>
+            <input 
+                type="number" 
+                id="min_partner_price" 
+                name="min_partner_price" 
+                class="form-control" 
+                value="{{if .product}}{{printf "%.2f" .product.MinPartnerPrice}}{{end}}" 
+                step="0.01" 
+                min="0" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="roll_width" class="form-label">Ширина рулона (м)</label>
+            <input 
+                type="number" 
+                id="roll_width" 
+                name="roll_width" 
+                class="form-control" 
+                value="{{if .product}}{{if .product.RollWidth}}{{printf "%.2f" .product.RollWidth}}{{end}}{{end}}" 
+                step="0.01" 
+                min="0"
+            >
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {{if .isEdit}}
+                    Сохранить изменения
+                {{else}}
+                    Создать продукцию
+                {{end}}
+            </button>
+            <a href="/" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Валидация формы
+document.querySelector('.product-form').addEventListener('submit', function(e) {
+    const minPrice = parseFloat(document.getElementById('min_partner_price').value);
+    const rollWidth = document.getElementById('roll_width').value;
+
+    if (minPrice < 0) {
+        e.preventDefault();
+        alert('Минимальная стоимость не может быть отрицательной');
+        return;
+    }
+
+    if (rollWidth && parseFloat(rollWidth) < 0) {
+        e.preventDefault();
+        alert('Ширина рулона не может быть отрицательной');
+        return;
+    }
+});
+</script>
+{{end}} 

@@ -1,0 +1,323 @@
+{{define "content"}}
+<div class="page-header">
+    <h2>Детали продукции</h2>
+    <a href="/" class="btn btn-secondary">← Назад к списку</a>
+</div>
+
+<div class="product-detail-container">
+    <div class="product-main-info">
+        <div class="product-header">
+            <h3>{{.product.ProductType.Name}} | {{.product.Name}}</h3>
+            <div class="product-badges">
+                {{if .product.CalculatedPrice}}
+                    <span class="badge badge-success">Стоимость рассчитана</span>
+                {{else}}
+                    <span class="badge badge-warning">Стоимость не рассчитана</span>
+                {{end}}
+            </div>
+        </div>
+
+        <div class="product-details-grid">
+            <div class="detail-section">
+                <h4>Основная информация</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td><strong>Артикул:</strong></td>
+                        <td>{{.product.Article}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Тип продукции:</strong></td>
+                        <td>{{.product.ProductType.Name}} (коэф. {{printf "%.2f" .product.ProductType.Coefficient}})</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Наименование:</strong></td>
+                        <td>{{.product.Name}}</td>
+                    </tr>
+                    {{if .product.Description}}
+                    <tr>
+                        <td><strong>Описание:</strong></td>
+                        <td>{{.product.Description}}</td>
+                    </tr>
+                    {{end}}
+                </table>
+            </div>
+
+            <div class="detail-section">
+                <h4>Ценообразование</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td><strong>Мин. стоимость для партнера:</strong></td>
+                        <td class="price">{{printf "%.2f" .product.MinPartnerPrice}} ₽</td>
+                    </tr>
+                    {{if .product.CalculatedPrice}}
+                    <tr>
+                        <td><strong>Расчетная стоимость:</strong></td>
+                        <td class="price calculated-price">{{printf "%.2f" .product.CalculatedPrice}} ₽</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Наценка:</strong></td>
+                        <td class="markup">
+                            {{$markup := sub .product.MinPartnerPrice .product.CalculatedPrice}}
+                            {{$markupPercent := div (mul $markup 100) .product.CalculatedPrice}}
+                            {{printf "%.2f" $markup}} ₽ ({{printf "%.1f" $markupPercent}}%)
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td><strong>Расчетная стоимость:</strong></td>
+                        <td class="no-calculation">Не рассчитано</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.CostPrice}}
+                    <tr>
+                        <td><strong>Себестоимость:</strong></td>
+                        <td class="price">{{printf "%.2f" .product.CostPrice}} ₽</td>
+                    </tr>
+                    {{end}}
+                </table>
+            </div>
+
+            {{if or .product.RollWidth .product.PackageLength .product.PackageWidth .product.PackageHeight}}
+            <div class="detail-section">
+                <h4>Размеры и упаковка</h4>
+                <table class="detail-table">
+                    {{if .product.RollWidth}}
+                    <tr>
+                        <td><strong>Ширина рулона:</strong></td>
+                        <td>{{printf "%.2f" .product.RollWidth}} м</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.PackageLength}}
+                    <tr>
+                        <td><strong>Длина упаковки:</strong></td>
+                        <td>{{printf "%.2f" .product.PackageLength}} см</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.PackageWidth}}
+                    <tr>
+                        <td><strong>Ширина упаковки:</strong></td>
+                        <td>{{printf "%.2f" .product.PackageWidth}} см</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.PackageHeight}}
+                    <tr>
+                        <td><strong>Высота упаковки:</strong></td>
+                        <td>{{printf "%.2f" .product.PackageHeight}} см</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.WeightWithoutPackage}}
+                    <tr>
+                        <td><strong>Вес без упаковки:</strong></td>
+                        <td>{{printf "%.2f" .product.WeightWithoutPackage}} кг</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.WeightWithPackage}}
+                    <tr>
+                        <td><strong>Вес с упаковкой:</strong></td>
+                        <td>{{printf "%.2f" .product.WeightWithPackage}} кг</td>
+                    </tr>
+                    {{end}}
+                </table>
+            </div>
+            {{end}}
+
+            {{if or .product.ProductionTimeHours .product.WorkshopNumber .product.RequiredWorkers}}
+            <div class="detail-section">
+                <h4>Производство</h4>
+                <table class="detail-table">
+                    {{if .product.ProductionTimeHours}}
+                    <tr>
+                        <td><strong>Время производства:</strong></td>
+                        <td>{{.product.ProductionTimeHours}} ч</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.WorkshopNumber}}
+                    <tr>
+                        <td><strong>Номер цеха:</strong></td>
+                        <td>{{.product.WorkshopNumber}}</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.RequiredWorkers}}
+                    <tr>
+                        <td><strong>Требуется рабочих:</strong></td>
+                        <td>{{.product.RequiredWorkers}} чел.</td>
+                    </tr>
+                    {{end}}
+                </table>
+            </div>
+            {{end}}
+
+            {{if or .product.QualityCertificatePath .product.StandardNumber}}
+            <div class="detail-section">
+                <h4>Сертификация</h4>
+                <table class="detail-table">
+                    {{if .product.StandardNumber}}
+                    <tr>
+                        <td><strong>Номер стандарта:</strong></td>
+                        <td>{{.product.StandardNumber}}</td>
+                    </tr>
+                    {{end}}
+                    {{if .product.QualityCertificatePath}}
+                    <tr>
+                        <td><strong>Сертификат качества:</strong></td>
+                        <td><a href="{{.product.QualityCertificatePath}}" target="_blank">Скачать</a></td>
+                    </tr>
+                    {{end}}
+                </table>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="/products/{{.product.ID}}/materials" class="btn btn-info">Материалы</a>
+    <a href="/products/{{.product.ID}}/edit" class="btn btn-warning">Редактировать</a>
+    <button onclick="deleteProduct({{.product.ID}})" class="btn btn-danger">Удалить</button>
+</div>
+
+<style>
+.product-detail-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.product-main-info {
+    padding: 2rem;
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.product-header h3 {
+    color: #2c3e50;
+    margin: 0;
+}
+
+.product-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.product-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.detail-section {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.detail-section h4 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.detail-table td {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f8f9fa;
+    vertical-align: top;
+}
+
+.detail-table td:first-child {
+    width: 40%;
+    color: #6c757d;
+}
+
+.detail-table td:last-child {
+    color: #495057;
+}
+
+.price {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.calculated-price {
+    color: #17a2b8;
+}
+
+.markup {
+    font-weight: 600;
+    color: #fd7e14;
+}
+
+.no-calculation {
+    color: #6c757d;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .product-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .detail-table td:first-child {
+        width: 50%;
+    }
+}
+</style>
+
+<script>
+function deleteProduct(id) {
+    if (confirm('Вы уверены, что хотите удалить эту продукцию? Это действие нельзя отменить.')) {
+        fetch(`/api/products/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert('Продукция успешно удалена');
+                window.location.href = '/';
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            alert('Ошибка удаления: ' + error.message);
+        });
+    }
+}
+</script>
+{{end}} 

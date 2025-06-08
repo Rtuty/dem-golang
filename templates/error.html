@@ -1,0 +1,14 @@
+{{define "content"}}
+<div class="error-container">
+    <div class="error-content">
+        <h2>Произошла ошибка</h2>
+        <div class="error-message">
+            {{.error}}
+        </div>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">На главную</a>
+            <button onclick="history.back()" class="btn btn-secondary">Назад</button>
+        </div>
+    </div>
+</div>
+{{end}} 

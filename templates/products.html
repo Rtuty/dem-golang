@@ -1,0 +1,84 @@
+{{define "content"}}
+<div class="page-header">
+    <h2>Список продукции</h2>
+    <a href="/products/new" class="btn btn-primary">Добавить продукцию</a>
+</div>
+
+{{if .products}}
+<div class="products-table-container">
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th>Тип | Наименование продукта</th>
+                <th>Артикул</th>
+                <th>Минимальная стоимость для партнера (₽)</th>
+                <th>Ширина (м)</th>
+                <th>Стоимость (₽)</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .products}}
+            <tr class="product-row" data-id="{{.ID}}">
+                <td>
+                    <div class="product-title">
+                        <strong>{{.TypeName}}</strong><br>
+                        {{.Name}}
+                    </div>
+                </td>
+                <td class="product-article">{{.Article}}</td>
+                <td class="product-price">{{printf "%.2f" .MinPartnerPrice}}</td>
+                <td class="product-width">
+                    {{if .RollWidth}}
+                        {{printf "%.2f" .RollWidth}}
+                    {{else}}
+                        -
+                    {{end}}
+                </td>
+                <td class="product-calculated-price">
+                    {{if .CalculatedPrice}}
+                        {{printf "%.2f" .CalculatedPrice}}
+                    {{else}}
+                        <span class="no-calculation">Не рассчитано</span>
+                    {{end}}
+                </td>
+                <td class="product-actions">
+                    <a href="/products/{{.ID}}" class="btn btn-sm btn-info">Детали</a>
+                    <a href="/products/{{.ID}}/materials" class="btn btn-sm btn-secondary">Материалы</a>
+                    <a href="/products/{{.ID}}/edit" class="btn btn-sm btn-warning">Редактировать</a>
+                    <button onclick="deleteProduct({{.ID}})" class="btn btn-sm btn-danger">Удалить</button>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{else}}
+<div class="empty-state">
+    <p>Продукция не найдена</p>
+    <a href="/products/new" class="btn btn-primary">Добавить первую продукцию</a>
+</div>
+{{end}}
+
+<script>
+function deleteProduct(id) {
+    if (confirm('Вы уверены, что хотите удалить эту продукцию?')) {
+        fetch(`/api/products/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert('Продукция успешно удалена');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            alert('Ошибка удаления: ' + error.message);
+        });
+    }
+}
+</script>
+{{end}} 

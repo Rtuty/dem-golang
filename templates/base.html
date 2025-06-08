@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="/static/images/logo.png" alt="Наш декор" class="logo-img">
+                    <h1 class="logo-text">Наш декор</h1>
+                </div>
+                <nav class="nav">
+                    <a href="/" class="nav-link">Продукция</a>
+                    <a href="/materials" class="nav-link">Материалы</a>
+                    <a href="/calculator" class="nav-link">Калькулятор</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            {{template "content" .}}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Наш декор. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 
