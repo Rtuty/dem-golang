@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест удаления продукта</title>
+</head>
+<body>
+    <button onclick="testDelete()">Тестировать удаление продукта ID 2</button>
+    
+    <script>
+    function testDelete() {
+        fetch('/api/v1/products/2', {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Ответ сервера:', data);
+            if (data.success) {
+                alert('Продукция успешно удалена');
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Ошибка удаления: ' + error.message);
+        });
+    }
+    </script>
+</body>
+</html> 

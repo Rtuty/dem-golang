@@ -255,7 +255,7 @@ func (r *productRepositoryImpl) GetMaterialsForProduct(productID int) ([]entitie
 			m.measurement_unit_id, m.package_quantity, m.cost_per_unit,
 			m.stock_quantity, m.min_stock_quantity, m.image_path,
 			m.created_at, m.updated_at,
-			mu.id, mu.name, mu.abbreviation, mu.created_at
+			mu.id, mu.name, mu.symbol as abbreviation, mu.created_at
 		FROM product_materials pm
 		JOIN materials m ON pm.material_id = m.id
 		JOIN measurement_units mu ON m.measurement_unit_id = mu.id

@@ -28,7 +28,7 @@ func (r *materialRepositoryImpl) GetAll() ([]entities.Material, error) {
 			m.stock_quantity, m.min_stock_quantity, m.image_path,
 			m.created_at, m.updated_at,
 			mt.name as type_name, mt.waste_percentage,
-			mu.name as unit_name, mu.abbreviation
+			mu.name as unit_name, mu.symbol as abbreviation
 		FROM materials m
 		JOIN material_types mt ON m.material_type_id = mt.id
 		JOIN measurement_units mu ON m.measurement_unit_id = mu.id
@@ -87,7 +87,7 @@ func (r *materialRepositoryImpl) GetByID(id int) (*entities.Material, error) {
 			m.stock_quantity, m.min_stock_quantity, m.image_path,
 			m.created_at, m.updated_at,
 			mt.name as type_name, mt.waste_percentage,
-			mu.name as unit_name, mu.abbreviation
+			mu.name as unit_name, mu.symbol as abbreviation
 		FROM materials m
 		JOIN material_types mt ON m.material_type_id = mt.id
 		JOIN measurement_units mu ON m.measurement_unit_id = mu.id
@@ -211,7 +211,7 @@ func (r *materialRepositoryImpl) GetMaterialsForProduct(productID int) ([]entiti
 			m.stock_quantity, m.min_stock_quantity, m.image_path,
 			m.created_at, m.updated_at,
 			mt.name as type_name, mt.waste_percentage,
-			mu.name as unit_name, mu.abbreviation
+			mu.name as unit_name, mu.symbol as abbreviation
 		FROM product_materials pm
 		JOIN materials m ON pm.material_id = m.id
 		JOIN material_types mt ON m.material_type_id = mt.id

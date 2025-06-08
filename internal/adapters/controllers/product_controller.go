@@ -78,7 +78,7 @@ func (c *ProductController) GetProductDetailsPage(ctx *gin.Context) {
 
 	productDTO := dto.FromProductEntityWithMaterials(product, materials)
 
-	ctx.HTML(http.StatusOK, "product_details.html", gin.H{
+	ctx.HTML(http.StatusOK, "product_detail.html", gin.H{
 		"title":     "Детали продукции",
 		"product":   productDTO,
 		"materials": materials,
@@ -261,4 +261,97 @@ func (c *ProductController) CreateProductWeb(ctx *gin.Context) {
 
 	// Успешное создание - редирект на список продукции
 	ctx.Redirect(http.StatusFound, "/products")
+}
+
+// GetEditProductPage отображает форму редактирования продукции
+func (c *ProductController) GetEditProductPage(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"error": "Некорректный ID продукции",
+		})
+		return
+	}
+
+	// Получаем продукцию для редактирования
+	product, err := c.productUseCase.GetProductByID(id)
+	if err != nil {
+		ctx.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error": "Продукция не найдена: " + err.Error(),
+		})
+		return
+	}
+
+	// Получаем типы продукции для выпадающего списка
+	productTypes, err := c.productUseCase.GetProductTypes()
+	if err != nil {
+		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"error": "Ошибка загрузки типов продукции: " + err.Error(),
+		})
+		return
+	}
+
+	// Преобразуем в DTO для отображения в форме
+	productDTO := dto.FromProductEntity(product)
+
+	ctx.HTML(http.StatusOK, "product_form.html", gin.H{
+		"title":        "Редактирование продукции",
+		"isEdit":       true,
+		"formAction":   "/products/" + strconv.Itoa(id),
+		"product":      productDTO,
+		"productTypes": productTypes,
+	})
+}
+
+// UpdateProductWeb обрабатывает обновление продукции через веб-форму
+func (c *ProductController) UpdateProductWeb(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"error": "Некорректный ID продукции",
+		})
+		return
+	}
+
+	var request dto.UpdateProductRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		// Получаем продукцию и типы продукции для формы в случае ошибки
+		product, _ := c.productUseCase.GetProductByID(id)
+		productTypes, _ := c.productUseCase.GetProductTypes()
+		productDTO := dto.FromProductEntity(product)
+		
+		ctx.HTML(http.StatusBadRequest, "product_form.html", gin.H{
+			"title":        "Редактирование продукции",
+			"isEdit":       true,
+			"formAction":   "/products/" + strconv.Itoa(id),
+			"error":        "Некорректные данные формы: " + err.Error(),
+			"product":      productDTO,
+			"productTypes": productTypes,
+		})
+		return
+	}
+
+	// Преобразуем DTO в доменную сущность
+	product := request.ToEntity(id)
+
+	err = c.productUseCase.UpdateProduct(product)
+	if err != nil {
+		// Получаем продукцию и типы продукции для формы в случае ошибки
+		existingProduct, _ := c.productUseCase.GetProductByID(id)
+		productTypes, _ := c.productUseCase.GetProductTypes()
+		productDTO := dto.FromProductEntity(existingProduct)
+		
+		ctx.HTML(http.StatusBadRequest, "product_form.html", gin.H{
+			"title":        "Редактирование продукции",
+			"isEdit":       true,
+			"formAction":   "/products/" + strconv.Itoa(id),
+			"error":        "Ошибка обновления продукции: " + err.Error(),
+			"product":      productDTO,
+			"productTypes": productTypes,
+		})
+		return
+	}
+
+	// Успешное обновление - редирект на детали продукции
+	ctx.Redirect(http.StatusFound, "/products/"+strconv.Itoa(id))
 }

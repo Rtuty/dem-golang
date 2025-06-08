@@ -30,18 +30,10 @@
                 <td class="product-article">{{.Article}}</td>
                 <td class="product-price">{{printf "%.2f" .MinPartnerPrice}}</td>
                 <td class="product-width">
-                    {{if .RollWidth}}
-                        {{printf "%.2f" .RollWidth}}
-                    {{else}}
-                        -
-                    {{end}}
+                    {{formatFloat .RollWidth}}
                 </td>
                 <td class="product-calculated-price">
-                    {{if .CalculatedPrice}}
-                        {{printf "%.2f" .CalculatedPrice}}
-                    {{else}}
-                        <span class="no-calculation">Не рассчитано</span>
-                    {{end}}
+                    {{formatPrice .CalculatedPrice | safeHTML}}
                 </td>
                 <td class="product-actions">
                     <a href="/products/{{.ID}}" class="btn btn-sm btn-info">Детали</a>

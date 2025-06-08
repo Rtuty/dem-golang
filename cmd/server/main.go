@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -116,6 +117,27 @@ func main() {
 				return 0
 			}
 			return a / b
+		},
+		"deref": func(ptr *float64) float64 {
+			if ptr == nil {
+				return 0
+			}
+			return *ptr
+		},
+		"formatFloat": func(ptr *float64) string {
+			if ptr == nil {
+				return "-"
+			}
+			return fmt.Sprintf("%.2f", *ptr)
+		},
+		"formatPrice": func(ptr *float64) string {
+			if ptr == nil {
+				return `<span class="no-calculation">Не рассчитано</span>`
+			}
+			return fmt.Sprintf("%.2f", *ptr)
+		},
+		"safeHTML": func(s string) interface{} {
+			return template.HTML(s)
 		},
 	})
 

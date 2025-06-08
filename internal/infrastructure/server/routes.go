@@ -34,9 +34,11 @@ func setupWebRoutes(
 ) {
 	// Продукция
 	router.GET("/products", productController.GetProductsPage)
-	router.GET("/products/:id", productController.GetProductDetailsPage)
 	router.GET("/products/new", productController.GetCreateProductPage)
 	router.POST("/products", productController.CreateProductWeb)
+	router.GET("/products/:id/edit", productController.GetEditProductPage)
+	router.POST("/products/:id", productController.UpdateProductWeb)
+	router.GET("/products/:id", productController.GetProductDetailsPage)
 
 	// Материалы
 	router.GET("/materials", materialController.GetMaterialsPage)

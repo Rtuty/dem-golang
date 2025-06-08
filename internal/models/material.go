@@ -17,7 +17,7 @@ type MaterialType struct {
 type MeasurementUnit struct {
 	ID           int       `json:"id" db:"id"`
 	Name         string    `json:"name" db:"name"`
-	Abbreviation string    `json:"abbreviation" db:"abbreviation"`
+	Abbreviation string    `json:"abbreviation" db:"symbol"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
