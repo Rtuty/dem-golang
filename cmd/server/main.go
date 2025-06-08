@@ -99,18 +99,30 @@ func main() {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	router.Use(cors.New(corsConfig))
 
+	// Определяем функции для шаблонов (ДО загрузки шаблонов!)
+	router.SetFuncMap(map[string]interface{}{
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"mul": func(a, b float64) float64 {
+			return a * b
+		},
+		"div": func(a, b float64) float64 {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
+	})
+
 	// Загружаем шаблоны
 	router.LoadHTMLGlob("templates/*.html")
 
 	// Подключаем статические файлы
 	router.Static("/static", "./static")
-
-	// Определяем функции для шаблонов
-	router.SetFuncMap(map[string]interface{}{
-		"add": func(a, b float64) float64 {
-			return a + b
-		},
-	})
 
 	// Настраиваем маршруты (слой инфраструктуры)
 	server.SetupRoutes(router, productController, calculatorController)
