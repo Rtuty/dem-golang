@@ -102,9 +102,3 @@ testdata/output/
 
 # Documentation build
 docs/_build/
-
-# Vendor (if using)
-vendor/
-
-# Go modules (uncomment if using go modules and want to commit the vendor directory)
-# vendor/ 
