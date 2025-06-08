@@ -286,3 +286,27 @@ func (r *ProductRepository) GetProductTypes() ([]models.ProductType, error) {
 
 	return types, nil
 }
+
+// GetProductTypeByID возвращает тип продукции по ID
+func (r *ProductRepository) GetProductTypeByID(id int) (*models.ProductType, error) {
+	query := `
+		SELECT id, name, coefficient, created_at, updated_at 
+		FROM product_types 
+		WHERE id = $1
+	`
+
+	var productType models.ProductType
+	err := r.db.QueryRow(query, id).Scan(
+		&productType.ID, &productType.Name, &productType.Coefficient,
+		&productType.CreatedAt, &productType.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("тип продукции с ID %d не найден", id)
+		}
+		return nil, fmt.Errorf("ошибка получения типа продукции: %w", err)
+	}
+
+	return &productType, nil
+}

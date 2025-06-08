@@ -1,3 +1,4 @@
+{{template "base.html" .}}
 {{define "content"}}
 <div class="page-header">
     <h2>Список продукции</h2>
@@ -63,7 +64,7 @@
 <script>
 function deleteProduct(id) {
     if (confirm('Вы уверены, что хотите удалить эту продукцию?')) {
-        fetch(`/api/products/${id}`, {
+        fetch(`/products/${id}`, {
             method: 'DELETE',
         })
         .then(response => response.json())

@@ -11,10 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"wallpaper-system/internal/infrastructure/config"
-	"wallpaper-system/internal/infrastructure/logger"
-	"wallpaper-system/internal/infrastructure/server"
+	"wallpaper-system/internal/config"
+	"wallpaper-system/internal/database"
+	"wallpaper-system/internal/handlers"
+	"wallpaper-system/internal/repository"
+	"wallpaper-system/internal/services"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -35,117 +39,139 @@ import (
 
 func main() {
 	// Загружаем конфигурацию
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+	cfg := config.Load()
+
+	// Устанавливаем режим Gin в зависимости от окружения
+	if os.Getenv("APP_ENV") == "production" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// Инициализируем логгер
-	zapLogger, err := logger.NewZapLogger(cfg.Logger)
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("Ошибка инициализации логгера: %v", err)
 	}
-
-	defer zapLogger.Sync()
+	defer logger.Sync()
 
 	// Устанавливаем глобальный логгер
-	zap.ReplaceGlobals(zapLogger)
-	sugaredLogger := zap.S()
+	zap.ReplaceGlobals(logger)
+	sugar := logger.Sugar()
 
-	sugaredLogger.Infow("Запуск приложения",
-		"name", cfg.App.Name,
-		"version", cfg.App.Version,
-		"environment", cfg.App.Environment,
+	sugar.Infow("Запуск приложения",
+		"name", "Wallpaper System",
+		"version", "1.0.0",
+		"environment", os.Getenv("APP_ENV"),
 	)
 
-	// Инициализируем сервер с зависимостями
-	srv, cleanup, err := server.NewServer(cfg, sugaredLogger)
+	// Подключаемся к базе данных
+	db, err := database.New(&cfg.Database)
 	if err != nil {
-		sugaredLogger.Fatalf("Ошибка инициализации сервера: %v", err)
+		sugar.Fatalw("Ошибка подключения к базе данных", "error", err)
 	}
-	defer cleanup()
+	defer db.Close()
+
+	// Инициализируем репозитории
+	productRepo := repository.NewProductRepository(db.GetConnection())
+	materialRepo := repository.NewMaterialRepository(db.GetConnection())
+
+	// Инициализируем сервисы
+	productService := services.NewProductService(productRepo, materialRepo)
+	materialService := services.NewMaterialService(materialRepo)
+	calculatorService := services.NewCalculatorService(materialRepo, productRepo)
+
+	// Инициализируем хендлеры
+	productHandler := handlers.NewProductHandler(productService, materialService)
+	materialHandler := handlers.NewMaterialHandler(materialService, productService)
+	calculatorHandler := handlers.NewCalculatorHandler(calculatorService, productService, materialService)
+
+	// Создаем роутер Gin
+	router := gin.Default()
+
+	// Настраиваем CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	router.Use(cors.New(corsConfig))
+
+	// Загружаем шаблоны
+	router.LoadHTMLGlob("templates/*.html")
+
+	// Подключаем статические файлы
+	router.Static("/static", "./static")
+
+	// Определяем функции для шаблонов
+	router.SetFuncMap(map[string]interface{}{
+		"add": func(a, b float64) float64 {
+			return a + b
+		},
+	})
+
+	// Настраиваем маршруты
+	handlers.SetupRoutes(router, productHandler, materialHandler, calculatorHandler)
 
 	// Создаем HTTP сервер
-	httpServer := &http.Server{
-		Addr:         cfg.Server.GetServerAddress(),
-		Handler:      srv,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-		IdleTimeout:  cfg.Server.IdleTimeout,
+	srv := &http.Server{
+		Addr:         fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second,
 	}
 
 	// Запускаем сервер в горутине
 	go func() {
-		sugaredLogger.Infow("Запуск HTTP сервера",
-			"address", httpServer.Addr,
-		)
-
-		if err = httpServer.ListenAndServe(); err != nil && !errors.Is(http.ErrServerClosed, err) {
-			sugaredLogger.Fatalw("Ошибка запуска HTTP сервера", "error", err)
+		sugar.Infow("Запуск HTTP сервера", "address", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			sugar.Fatalw("Ошибка запуска HTTP сервера", "error", err)
 		}
 	}()
 
+	// Выводим информацию о запуске
+	printBanner(cfg)
+
 	// Ожидаем сигнал для graceful shutdown
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	sugaredLogger.Info("Получен сигнал завершения, останавливаем сервер...")
+
+	sugar.Info("Получен сигнал завершения, останавливаем сервер...")
 
 	// Graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err = httpServer.Shutdown(ctx); err != nil {
-		sugaredLogger.Errorw("Ошибка при остановке сервера", "error", err)
-		return
+	if err := srv.Shutdown(ctx); err != nil {
+		sugar.Fatalw("Ошибка при остановке сервера", "error", err)
 	}
 
-	sugaredLogger.Info("Сервер успешно остановлен")
-}
-
-// setupEnvironment настраивает окружение приложения
-func setupEnvironment(cfg *config.Config) {
-	// Устанавливаем часовой пояс
-	if cfg.App.Timezone != "" {
-		if location, err := time.LoadLocation(cfg.App.Timezone); err == nil {
-			time.Local = location
-		}
-	}
-
-	// Устанавливаем переменные окружения для Gin
-	if cfg.App.IsProduction() {
-		os.Setenv("GIN_MODE", "release")
-		return
-	}
-
-	if cfg.App.IsDevelopment() {
-		os.Setenv("GIN_MODE", "debug")
-	}
+	sugar.Info("Сервер успешно остановлен")
 }
 
 // printBanner выводит баннер приложения
 func printBanner(cfg *config.Config) {
 	banner := fmt.Sprintf(`
 ╔══════════════════════════════════════════════════════════╗
-║                    %s                    ║
-║                     Версия: %s                        ║
-║                  Окружение: %s                ║
+║                  Wallpaper System                        ║
+║                     Версия: 1.0.0                        ║
+║                  Окружение: %s                      ║
 ╚══════════════════════════════════════════════════════════╝
 
 🏭 Система управления производством обоев "Наш декор"
-🌐 Адрес: http://%s
+🌐 Адрес: http://%s:%s
 📊 Доступные эндпоинты:
-   • GET  /                   - Главная страница
-   • GET  /api/v1/products    - API продукции
-   • GET  /api/v1/materials   - API материалов
-   • POST /api/v1/calculator  - API калькулятора
+   • GET  /                          - Список продукции
+   • GET  /products                  - Список продукции
+   • GET  /products/:id              - Детали продукции
+   • GET  /products/:id/materials    - Материалы для продукции
+   • GET  /products/new              - Добавление продукции
+   • GET  /products/:id/edit         - Редактирование продукции
+   • GET  /calculator                - Калькулятор материалов
 
 `,
-		cfg.App.Name,
-		cfg.App.Version,
-		cfg.App.Environment,
-		cfg.Server.GetServerAddress(),
+		os.Getenv("APP_ENV"),
+		cfg.Server.Host,
+		cfg.Server.Port,
 	)
 
 	fmt.Print(banner)

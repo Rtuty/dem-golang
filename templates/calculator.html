@@ -18,39 +18,39 @@
 
 <div class="calculator-container">
     <div class="calculator-form">
-        <h3>Параметры расчета</h3>
-        <form method="POST" class="material-calc-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="product_type_id" class="form-label">Тип продукции*</label>
-                    <select id="product_type_id" name="product_type_id" class="form-control" required>
-                        <option value="">Выберите тип продукции</option>
-                        {{range .productTypes}}
-                        <option value="{{.ID}}" 
-                            {{if $.request}}{{if eq .ID $.request.ProductTypeID}}selected{{end}}{{end}}>
-                            {{.Name}} (коэф. {{printf "%.2f" .Coefficient}})
-                        </option>
-                        {{end}}
-                    </select>
-                </div>
+        <h3>Расчет необходимого количества материала</h3>
+        <form method="POST" action="/calculator/calculate">
+            <div class="form-group">
+                <label for="product_type_id" class="form-label">Тип продукции*</label>
+                <select id="product_type_id" name="product_type_id" class="form-control" required>
+                    <option value="">Выберите тип продукции</option>
+                    {{range .productTypes}}
+                    <option value="{{.ID}}" 
+                        {{if $.request}}{{if eq .ID $.request.ProductTypeID}}selected{{end}}{{end}}>
+                        {{.Name}} (коэффициент: {{printf "%.2f" .Coefficient}})
+                    </option>
+                    {{end}}
+                </select>
+                <div class="form-text">Влияет на расчет количества материала через коэффициент типа</div>
+            </div>
 
-                <div class="form-group">
-                    <label for="material_type_id" class="form-label">Тип материала*</label>
-                    <select id="material_type_id" name="material_type_id" class="form-control" required>
-                        <option value="">Выберите тип материала</option>
-                        {{range .materialTypes}}
-                        <option value="{{.ID}}" 
-                            {{if $.request}}{{if eq .ID $.request.MaterialTypeID}}selected{{end}}{{end}}>
-                            {{.Name}} (брак {{printf "%.1f" .WastePercentage}}%)
-                        </option>
-                        {{end}}
-                    </select>
-                </div>
+            <div class="form-group">
+                <label for="material_type_id" class="form-label">Тип материала*</label>
+                <select id="material_type_id" name="material_type_id" class="form-control" required>
+                    <option value="">Выберите тип материала</option>
+                    {{range .materialTypes}}
+                    <option value="{{.ID}}" 
+                        {{if $.request}}{{if eq .ID $.request.MaterialTypeID}}selected{{end}}{{end}}>
+                        {{.Name}} (брак: {{printf "%.1f" .WastePercentage}}%)
+                    </option>
+                    {{end}}
+                </select>
+                <div class="form-text">Влияет на расчет через процент возможного брака материала</div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="product_quantity" class="form-label">Количество продукции (шт)*</label>
+                    <label for="product_quantity" class="form-label">Количество продукции*</label>
                     <input 
                         type="number" 
                         id="product_quantity" 
@@ -69,115 +69,113 @@
                         id="material_in_stock" 
                         name="material_in_stock" 
                         class="form-control" 
-                        value="{{if .request}}{{.request.MaterialInStock}}{{end}}" 
-                        min="0" 
-                        step="0.001"
+                        value="{{if .request}}{{printf "%.2f" .request.MaterialInStock}}{{end}}" 
+                        step="0.01" 
+                        min="0"
                     >
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="product_param1" class="form-label">Параметр продукции 1*</label>
+                    <label for="product_param1" class="form-label">Параметр 1 продукции*</label>
                     <input 
                         type="number" 
                         id="product_param1" 
                         name="product_param1" 
                         class="form-control" 
-                        value="{{if .request}}{{.request.ProductParam1}}{{end}}" 
-                        min="0" 
-                        step="0.001" 
+                        value="{{if .request}}{{printf "%.2f" .request.ProductParam1}}{{end}}" 
+                        step="0.01" 
+                        min="0.01" 
                         required
                     >
-                    <small class="form-text">Например, длина в метрах</small>
+                    <div class="form-text">Например, длина в метрах</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="product_param2" class="form-label">Параметр продукции 2*</label>
+                    <label for="product_param2" class="form-label">Параметр 2 продукции*</label>
                     <input 
                         type="number" 
                         id="product_param2" 
                         name="product_param2" 
                         class="form-control" 
-                        value="{{if .request}}{{.request.ProductParam2}}{{end}}" 
-                        min="0" 
-                        step="0.001" 
+                        value="{{if .request}}{{printf "%.2f" .request.ProductParam2}}{{end}}" 
+                        step="0.01" 
+                        min="0.01" 
                         required
                     >
-                    <small class="form-text">Например, ширина в метрах</small>
+                    <div class="form-text">Например, ширина в метрах</div>
                 </div>
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Рассчитать</button>
-                <button type="reset" class="btn btn-secondary">Очистить</button>
-            </div>
+            <button type="submit" class="btn btn-primary">Рассчитать</button>
         </form>
     </div>
 
-    {{if .result}}
     <div class="calculator-result">
         <h3>Результат расчета</h3>
-        <div class="result-card">
-            {{if eq .result.RequiredQuantity -1}}
-                <div class="result-error">
-                    <h4>Ошибка расчета</h4>
-                    <p>Проверьте правильность введенных данных. Возможные причины:</p>
-                    <ul>
-                        <li>Несуществующий тип продукции или материала</li>
-                        <li>Отрицательные или нулевые значения параметров</li>
-                        <li>Некорректные данные</li>
-                    </ul>
-                </div>
-            {{else}}
-                <div class="result-success">
-                    <h4>Необходимо закупить материала:</h4>
-                    <div class="result-value">
-                        {{.result.RequiredQuantity}} единиц
-                    </div>
-                    {{if eq .result.RequiredQuantity 0}}
-                        <p class="result-note">Материала на складе достаточно для производства</p>
-                    {{end}}
-                </div>
-            {{end}}
+
+        {{if .success}}
+        <div class="result-card result-success">
+            <h4>Необходимое количество материала:</h4>
+            <div class="result-value">{{.result}} шт.</div>
+            <p>Указанное количество учитывает возможный брак материала и наличие на складе.</p>
         </div>
 
-        {{if .request}}
         <div class="calculation-details">
-            <h4>Параметры расчета:</h4>
+            <h4>Детали расчета:</h4>
             <ul>
-                <li><strong>Количество продукции:</strong> {{.request.ProductQuantity}} шт</li>
-                <li><strong>Параметр 1:</strong> {{.request.ProductParam1}}</li>
-                <li><strong>Параметр 2:</strong> {{.request.ProductParam2}}</li>
-                <li><strong>Материал на складе:</strong> {{.request.MaterialInStock}}</li>
+                <li><strong>Тип продукции:</strong> 
+                    {{range .productTypes}}
+                        {{if eq .ID $.request.ProductTypeID}}{{.Name}} (коэффициент: {{printf "%.2f" .Coefficient}}){{end}}
+                    {{end}}
+                </li>
+                <li><strong>Тип материала:</strong> 
+                    {{range .materialTypes}}
+                        {{if eq .ID $.request.MaterialTypeID}}{{.Name}} (брак: {{printf "%.1f" .WastePercentage}}%){{end}}
+                    {{end}}
+                </li>
+                <li><strong>Количество продукции:</strong> {{.request.ProductQuantity}} шт.</li>
+                <li><strong>Параметры продукции:</strong> {{printf "%.2f" .request.ProductParam1}} × {{printf "%.2f" .request.ProductParam2}}</li>
+                <li><strong>Материал на складе:</strong> {{printf "%.2f" .request.MaterialInStock}}</li>
             </ul>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <p>Здесь будет отображен результат расчета</p>
         </div>
         {{end}}
     </div>
-    {{end}}
 </div>
 
 <script>
-// Валидация формы
-document.querySelector('.material-calc-form').addEventListener('submit', function(e) {
+document.querySelector('form').addEventListener('submit', function(e) {
+    const productTypeID = document.getElementById('product_type_id').value;
+    const materialTypeID = document.getElementById('material_type_id').value;
     const productQuantity = parseInt(document.getElementById('product_quantity').value);
-    const param1 = parseFloat(document.getElementById('product_param1').value);
-    const param2 = parseFloat(document.getElementById('product_param2').value);
-    const materialInStock = parseFloat(document.getElementById('material_in_stock').value || '0');
+    const productParam1 = parseFloat(document.getElementById('product_param1').value);
+    const productParam2 = parseFloat(document.getElementById('product_param2').value);
+    const materialInStock = parseFloat(document.getElementById('material_in_stock').value || 0);
 
-    if (productQuantity <= 0) {
+    if (!productTypeID || !materialTypeID) {
         e.preventDefault();
-        alert('Количество продукции должно быть больше 0');
+        alert('Выберите тип продукции и тип материала');
         return;
     }
 
-    if (param1 <= 0 || param2 <= 0) {
+    if (isNaN(productQuantity) || productQuantity <= 0) {
         e.preventDefault();
-        alert('Параметры продукции должны быть больше 0');
+        alert('Количество продукции должно быть положительным целым числом');
         return;
     }
 
-    if (materialInStock < 0) {
+    if (isNaN(productParam1) || productParam1 <= 0 || isNaN(productParam2) || productParam2 <= 0) {
+        e.preventDefault();
+        alert('Параметры продукции должны быть положительными числами');
+        return;
+    }
+
+    if (isNaN(materialInStock) || materialInStock < 0) {
         e.preventDefault();
         alert('Количество материала на складе не может быть отрицательным');
         return;

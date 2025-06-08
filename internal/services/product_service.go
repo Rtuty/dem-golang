@@ -81,8 +81,25 @@ func (s *ProductService) CalculateProductPrice(productID int) (float64, error) {
 		totalCost += materialCost
 	}
 
+	// Получаем информацию о типе продукции для учета коэффициента
+	product, err := s.productRepo.GetByID(productID)
+	if err == nil && product.ProductType != nil {
+		// Применяем коэффициент типа продукции
+		totalCost *= product.ProductType.Coefficient
+	}
+
+	// Добавляем наценку (например, 20%)
+	totalCost *= 1.2
+
 	// Округляем до сотых
-	return math.Round(totalCost*100) / 100, nil
+	totalCost = math.Round(totalCost*100) / 100
+
+	// Проверяем, что стоимость не отрицательная
+	if totalCost < 0 {
+		totalCost = 0
+	}
+
+	return totalCost, nil
 }
 
 // CreateProduct создает новую продукцию
