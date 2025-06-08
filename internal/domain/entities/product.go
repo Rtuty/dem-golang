@@ -29,7 +29,7 @@ type Product struct {
 	WeightWithPackage      *float64
 	QualityCertificatePath *string
 	StandardNumber         *string
-	ProductionTimeHours    *int
+	ProductionTimeHours    *float64
 	CostPrice              *float64
 	WorkshopNumber         *string
 	RequiredWorkers        *int

@@ -27,7 +27,7 @@ type ProductDetailDTO struct {
 	WeightWithPackage      *float64             `json:"weight_with_package"`
 	QualityCertificatePath *string              `json:"quality_certificate_path"`
 	StandardNumber         *string              `json:"standard_number"`
-	ProductionTimeHours    *int                 `json:"production_time_hours"`
+	ProductionTimeHours    *float64             `json:"production_time_hours"`
 	CostPrice              *float64             `json:"cost_price"`
 	WorkshopNumber         *string              `json:"workshop_number"`
 	RequiredWorkers        *int                 `json:"required_workers"`

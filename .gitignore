@@ -76,13 +76,7 @@ jspm_packages/
 tmp/
 temp/
 
-# Database
-*.sqlite
-*.sqlite3
-*.db
-
 # Backup files
-*.sql
 backup_*
 
 # Docker

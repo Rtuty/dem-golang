@@ -87,6 +87,7 @@ func main() {
 
 	// Инициализируем контроллеры (слой адаптеров)
 	productController := controllers.NewProductController(productUseCase, materialUseCase)
+	materialController := controllers.NewMaterialController(materialUseCase)
 	calculatorController := controllers.NewCalculatorController(calculatorUseCase, materialUseCase, productUseCase)
 
 	// Создаем роутер Gin
@@ -125,7 +126,7 @@ func main() {
 	router.Static("/static", "./static")
 
 	// Настраиваем маршруты (слой инфраструктуры)
-	server.SetupRoutes(router, productController, calculatorController)
+	server.SetupRoutes(router, productController, calculatorController, materialController)
 
 	// Создаем HTTP сервер
 	srv := &http.Server{

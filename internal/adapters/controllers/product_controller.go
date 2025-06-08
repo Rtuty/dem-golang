@@ -201,3 +201,64 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 	response := dto.NewSuccessResponse("Продукция успешно удалена", nil)
 	ctx.JSON(http.StatusOK, response)
 }
+
+// GetCreateProductPage отображает форму создания новой продукции
+func (c *ProductController) GetCreateProductPage(ctx *gin.Context) {
+	// Получаем типы продукции для выпадающего списка
+	productTypes, err := c.productUseCase.GetProductTypes()
+	if err != nil {
+		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"error": "Ошибка загрузки типов продукции: " + err.Error(),
+		})
+		return
+	}
+
+	ctx.HTML(http.StatusOK, "product_form.html", gin.H{
+		"title":        "Создание продукции",
+		"isEdit":       false,
+		"formAction":   "/products",
+		"product":      nil,
+		"productTypes": productTypes,
+	})
+}
+
+// CreateProductWeb обрабатывает создание продукции через веб-форму
+func (c *ProductController) CreateProductWeb(ctx *gin.Context) {
+	var request dto.CreateProductRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		// Получаем типы продукции для формы в случае ошибки
+		productTypes, _ := c.productUseCase.GetProductTypes()
+		
+		ctx.HTML(http.StatusBadRequest, "product_form.html", gin.H{
+			"title":        "Создание продукции",
+			"isEdit":       false,
+			"formAction":   "/products",
+			"error":        "Некорректные данные формы: " + err.Error(),
+			"product":      request,
+			"productTypes": productTypes,
+		})
+		return
+	}
+
+	// Преобразуем DTO в доменную сущность
+	product := request.ToEntity()
+
+	err := c.productUseCase.CreateProduct(product)
+	if err != nil {
+		// Получаем типы продукции для формы в случае ошибки
+		productTypes, _ := c.productUseCase.GetProductTypes()
+		
+		ctx.HTML(http.StatusBadRequest, "product_form.html", gin.H{
+			"title":        "Создание продукции",
+			"isEdit":       false,
+			"formAction":   "/products",
+			"error":        "Ошибка создания продукции: " + err.Error(),
+			"product":      request,
+			"productTypes": productTypes,
+		})
+		return
+	}
+
+	// Успешное создание - редирект на список продукции
+	ctx.Redirect(http.StatusFound, "/products")
+}

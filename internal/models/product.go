@@ -29,7 +29,7 @@ type Product struct {
 	WeightWithPackage      *float64  `json:"weight_with_package" db:"weight_with_package"`
 	QualityCertificatePath *string   `json:"quality_certificate_path" db:"quality_certificate_path"`
 	StandardNumber         *string   `json:"standard_number" db:"standard_number"`
-	ProductionTimeHours    *int      `json:"production_time_hours" db:"production_time_hours"`
+	ProductionTimeHours    *float64  `json:"production_time_hours" db:"production_time_hours"`
 	CostPrice              *float64  `json:"cost_price" db:"cost_price"`
 	WorkshopNumber         *string   `json:"workshop_number" db:"workshop_number"`
 	RequiredWorkers        *int      `json:"required_workers" db:"required_workers"`

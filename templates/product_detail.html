@@ -302,12 +302,12 @@
 <script>
 function deleteProduct(id) {
     if (confirm('Вы уверены, что хотите удалить эту продукцию? Это действие нельзя отменить.')) {
-        fetch(`/api/products/${id}`, {
+        fetch(`/api/v1/products/${id}`, {
             method: 'DELETE',
         })
         .then(response => response.json())
         .then(data => {
-            if (data.message) {
+            if (data.success) {
                 alert('Продукция успешно удалена');
                 window.location.href = '/';
             } else {
