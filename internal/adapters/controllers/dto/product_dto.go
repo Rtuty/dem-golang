@@ -27,7 +27,7 @@ type ProductDetailDTO struct {
 	WeightWithPackage      *float64             `json:"weight_with_package"`
 	QualityCertificatePath *string              `json:"quality_certificate_path"`
 	StandardNumber         *string              `json:"standard_number"`
-	ProductionTimeHours    *int                 `json:"production_time_hours"`
+	ProductionTimeHours    *float64             `json:"production_time_hours"`
 	CostPrice              *float64             `json:"cost_price"`
 	WorkshopNumber         *string              `json:"workshop_number"`
 	RequiredWorkers        *int                 `json:"required_workers"`
@@ -47,22 +47,34 @@ type ProductMaterialDTO struct {
 
 // CreateProductRequest представляет запрос на создание продукции
 type CreateProductRequest struct {
-	Article         string   `json:"article" binding:"required"`
-	ProductTypeID   int      `json:"product_type_id" binding:"required"`
-	Name            string   `json:"name" binding:"required"`
-	Description     *string  `json:"description"`
-	MinPartnerPrice float64  `json:"min_partner_price" binding:"required,min=0"`
-	RollWidth       *float64 `json:"roll_width" binding:"omitempty,min=0"`
+	Article                string   `form:"article" json:"article" binding:"required"`
+	ProductTypeID          int      `form:"product_type_id" json:"product_type_id" binding:"required"`
+	Name                   string   `form:"name" json:"name" binding:"required"`
+	Description            string   `form:"description" json:"description"`
+	MinPartnerPrice        float64  `form:"min_partner_price" json:"min_partner_price" binding:"required,min=0"`
+	RollWidth              *float64 `form:"roll_width" json:"roll_width" binding:"omitempty,min=0"`
+	PackageLength          *float64 `form:"package_length" json:"package_length" binding:"omitempty,min=0"`
+	PackageWidth           *float64 `form:"package_width" json:"package_width" binding:"omitempty,min=0"`
+	PackageHeight          *float64 `form:"package_height" json:"package_height" binding:"omitempty,min=0"`
+	ProductionTimeHours    *float64 `form:"production_time_hours" json:"production_time_hours" binding:"omitempty,min=0"`
+	CostPrice              *float64 `form:"cost_price" json:"cost_price" binding:"omitempty,min=0"`
+	WorkshopNumber         string   `form:"workshop_number" json:"workshop_number"`
 }
 
 // UpdateProductRequest представляет запрос на обновление продукции
 type UpdateProductRequest struct {
-	Article         *string  `json:"article"`
-	ProductTypeID   *int     `json:"product_type_id"`
-	Name            *string  `json:"name"`
-	Description     *string  `json:"description"`
-	MinPartnerPrice *float64 `json:"min_partner_price" binding:"omitempty,min=0"`
-	RollWidth       *float64 `json:"roll_width" binding:"omitempty,min=0"`
+	Article                string   `form:"article" json:"article" binding:"required"`
+	ProductTypeID          int      `form:"product_type_id" json:"product_type_id" binding:"required"`
+	Name                   string   `form:"name" json:"name" binding:"required"`
+	Description            string   `form:"description" json:"description"`
+	MinPartnerPrice        float64  `form:"min_partner_price" json:"min_partner_price" binding:"required,min=0"`
+	RollWidth              *float64 `form:"roll_width" json:"roll_width" binding:"omitempty,min=0"`
+	PackageLength          *float64 `form:"package_length" json:"package_length" binding:"omitempty,min=0"`
+	PackageWidth           *float64 `form:"package_width" json:"package_width" binding:"omitempty,min=0"`
+	PackageHeight          *float64 `form:"package_height" json:"package_height" binding:"omitempty,min=0"`
+	ProductionTimeHours    *float64 `form:"production_time_hours" json:"production_time_hours" binding:"omitempty,min=0"`
+	CostPrice              *float64 `form:"cost_price" json:"cost_price" binding:"omitempty,min=0"`
+	WorkshopNumber         string   `form:"workshop_number" json:"workshop_number"`
 }
 
 // FromProductEntity преобразует доменную сущность в DTO для списка
@@ -123,37 +135,58 @@ func FromProductEntityWithMaterials(product *entities.Product, materials []entit
 
 // ToEntity преобразует DTO в доменную сущность
 func (dto *CreateProductRequest) ToEntity() *entities.Product {
+	var description *string
+	if dto.Description != "" {
+		description = &dto.Description
+	}
+	
+	var workshopNumber *string
+	if dto.WorkshopNumber != "" {
+		workshopNumber = &dto.WorkshopNumber
+	}
+
 	return &entities.Product{
-		Article:         dto.Article,
-		ProductTypeID:   dto.ProductTypeID,
-		Name:            dto.Name,
-		Description:     dto.Description,
-		MinPartnerPrice: dto.MinPartnerPrice,
-		RollWidth:       dto.RollWidth,
+		Article:             dto.Article,
+		ProductTypeID:       dto.ProductTypeID,
+		Name:                dto.Name,
+		Description:         description,
+		MinPartnerPrice:     dto.MinPartnerPrice,
+		RollWidth:           dto.RollWidth,
+		PackageLength:       dto.PackageLength,
+		PackageWidth:        dto.PackageWidth,
+		PackageHeight:       dto.PackageHeight,
+		ProductionTimeHours: dto.ProductionTimeHours,
+		CostPrice:           dto.CostPrice,
+		WorkshopNumber:      workshopNumber,
 	}
 }
 
 // ToEntity преобразует DTO в доменную сущность
 func (dto *UpdateProductRequest) ToEntity(id int) *entities.Product {
-	product := &entities.Product{ID: id}
+	var description *string
+	if dto.Description != "" {
+		description = &dto.Description
+	}
+	
+	var workshopNumber *string
+	if dto.WorkshopNumber != "" {
+		workshopNumber = &dto.WorkshopNumber
+	}
 
-	if dto.Article != nil {
-		product.Article = *dto.Article
-	}
-	if dto.ProductTypeID != nil {
-		product.ProductTypeID = *dto.ProductTypeID
-	}
-	if dto.Name != nil {
-		product.Name = *dto.Name
-	}
-	if dto.Description != nil {
-		product.Description = dto.Description
-	}
-	if dto.MinPartnerPrice != nil {
-		product.MinPartnerPrice = *dto.MinPartnerPrice
-	}
-	if dto.RollWidth != nil {
-		product.RollWidth = dto.RollWidth
+	product := &entities.Product{
+		ID:                  id,
+		Article:             dto.Article,
+		ProductTypeID:       dto.ProductTypeID,
+		Name:                dto.Name,
+		Description:         description,
+		MinPartnerPrice:     dto.MinPartnerPrice,
+		RollWidth:           dto.RollWidth,
+		PackageLength:       dto.PackageLength,
+		PackageWidth:        dto.PackageWidth,
+		PackageHeight:       dto.PackageHeight,
+		ProductionTimeHours: dto.ProductionTimeHours,
+		CostPrice:           dto.CostPrice,
+		WorkshopNumber:      workshopNumber,
 	}
 
 	return product

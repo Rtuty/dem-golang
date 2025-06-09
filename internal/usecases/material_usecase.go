@@ -40,6 +40,83 @@ func (uc *MaterialUseCase) GetMaterialsForProduct(productID int) ([]entities.Mat
 	return uc.materialRepo.GetMaterialsForProduct(productID)
 }
 
+// CreateMaterial создает новый материал
+func (uc *MaterialUseCase) CreateMaterial(material *entities.Material) error {
+	// Валидация
+	if err := uc.validateMaterial(material); err != nil {
+		return fmt.Errorf("ошибка валидации материала: %w", err)
+	}
+
+	return uc.materialRepo.Create(material)
+}
+
+// UpdateMaterial обновляет существующий материал
+func (uc *MaterialUseCase) UpdateMaterial(material *entities.Material) error {
+	// Проверяем, что материал существует
+	existing, err := uc.materialRepo.GetByID(material.ID)
+	if err != nil {
+		return fmt.Errorf("материал не найден: %w", err)
+	}
+	if existing == nil {
+		return entities.NewNotFoundError("материал", strconv.Itoa(material.ID))
+	}
+
+	// Валидация
+	if err := uc.validateMaterial(material); err != nil {
+		return fmt.Errorf("ошибка валидации материала: %w", err)
+	}
+
+	return uc.materialRepo.Update(material)
+}
+
+// DeleteMaterial удаляет материал
+func (uc *MaterialUseCase) DeleteMaterial(id int) error {
+	// Проверяем, что материал существует
+	existing, err := uc.materialRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("материал не найден: %w", err)
+	}
+	if existing == nil {
+		return entities.NewNotFoundError("материал", strconv.Itoa(id))
+	}
+
+	return uc.materialRepo.Delete(id)
+}
+
+// GetMeasurementUnits возвращает все единицы измерения
+func (uc *MaterialUseCase) GetMeasurementUnits() ([]entities.MeasurementUnit, error) {
+	return uc.materialRepo.GetMeasurementUnits()
+}
+
+// validateMaterial проверяет корректность данных материала
+func (uc *MaterialUseCase) validateMaterial(material *entities.Material) error {
+	if material.Article == "" {
+		return entities.NewValidationError("article", "артикул обязателен")
+	}
+	if material.Name == "" {
+		return entities.NewValidationError("name", "название обязательно")
+	}
+	if material.MaterialTypeID <= 0 {
+		return entities.NewValidationError("material_type_id", "тип материала обязателен")
+	}
+	if material.MeasurementUnitID <= 0 {
+		return entities.NewValidationError("measurement_unit_id", "единица измерения обязательна")
+	}
+	if material.PackageQuantity <= 0 {
+		return entities.NewValidationError("package_quantity", "количество в упаковке должно быть больше нуля")
+	}
+	if material.CostPerUnit < 0 {
+		return entities.NewValidationError("cost_per_unit", "стоимость за единицу не может быть отрицательной")
+	}
+	if material.StockQuantity < 0 {
+		return entities.NewValidationError("stock_quantity", "остаток на складе не может быть отрицательным")
+	}
+	if material.MinStockQuantity < 0 {
+		return entities.NewValidationError("min_stock_quantity", "минимальный остаток не может быть отрицательным")
+	}
+	return nil
+}
+
 // CalculatorUseCase содержит бизнес-логику для калькулятора материалов
 type CalculatorUseCase struct {
 	materialRepo repositories.MaterialRepository

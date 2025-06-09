@@ -1,0 +1,205 @@
+{{template "base.html" .}}
+{{define "content"}}
+<div class="page-header">
+    <h2>Детали материала</h2>
+    <a href="/materials" class="btn btn-secondary">← Назад к списку</a>
+</div>
+
+<div class="material-detail-container">
+    <div class="material-main-info">
+        <div class="material-header">
+            <h3>{{.material.MaterialType.Name}} | {{.material.Name}}</h3>
+            <div class="material-badges">
+                {{if gt .material.StockQuantity .material.MinStockQuantity}}
+                    <span class="badge badge-success">В наличии</span>
+                {{else}}
+                    <span class="badge badge-warning">Низкий запас</span>
+                {{end}}
+            </div>
+        </div>
+
+        <div class="material-details-grid">
+            <div class="detail-section">
+                <h4>Основная информация</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td><strong>Артикул:</strong></td>
+                        <td>{{.material.Article}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Тип материала:</strong></td>
+                        <td>{{.material.MaterialType.Name}} (брак {{printf "%.2f" .material.MaterialType.WastePercentage}}%)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Наименование:</strong></td>
+                        <td>{{.material.Name}}</td>
+                    </tr>
+                    {{if .material.Description}}
+                    <tr>
+                        <td><strong>Описание:</strong></td>
+                        <td>{{.material.Description}}</td>
+                    </tr>
+                    {{end}}
+                    <tr>
+                        <td><strong>Единица измерения:</strong></td>
+                        <td>{{.material.MeasurementUnit.Name}} ({{.material.MeasurementUnit.Abbreviation}})</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="detail-section">
+                <h4>Стоимость и упаковка</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td><strong>Стоимость за единицу:</strong></td>
+                        <td class="price">{{printf "%.2f" .material.CostPerUnit}} ₽</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Количество в упаковке:</strong></td>
+                        <td>{{printf "%.2f" .material.PackageQuantity}} {{.material.MeasurementUnit.Abbreviation}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Стоимость упаковки:</strong></td>
+                        <td class="price">{{printf "%.2f" (mul .material.CostPerUnit .material.PackageQuantity)}} ₽</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="detail-section">
+                <h4>Складские остатки</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td><strong>Остаток на складе:</strong></td>
+                        <td class="{{if gt .material.StockQuantity .material.MinStockQuantity}}stock-ok{{else}}stock-low{{end}}">
+                            {{printf "%.2f" .material.StockQuantity}} {{.material.MeasurementUnit.Abbreviation}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Минимальный остаток:</strong></td>
+                        <td>{{printf "%.2f" .material.MinStockQuantity}} {{.material.MeasurementUnit.Abbreviation}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Статус запаса:</strong></td>
+                        <td>
+                            {{if gt .material.StockQuantity .material.MinStockQuantity}}
+                                <span class="status status-ok">Достаточно</span>
+                            {{else}}
+                                <span class="status status-warning">Требуется пополнение</span>
+                            {{end}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Стоимость остатков:</strong></td>
+                        <td class="price">{{printf "%.2f" (mul .material.StockQuantity .material.CostPerUnit)}} ₽</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="/materials/{{.material.ID}}/edit" class="btn btn-warning">Редактировать</a>
+    <a href="/materials/{{.material.ID}}/history" class="btn btn-info">История движения</a>
+    <button onclick="deleteMaterial({{.material.ID}})" class="btn btn-danger">Удалить</button>
+</div>
+
+<style>
+.material-detail-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.material-main-info {
+    padding: 2rem;
+}
+
+.material-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.material-header h3 {
+    color: #2c3e50;
+    margin: 0;
+}
+
+.material-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.material-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.stock-ok {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.stock-low {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status-ok {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+@media (max-width: 768px) {
+    .material-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .material-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+function deleteMaterial(id) {
+    if (confirm('Вы уверены, что хотите удалить этот материал? Это действие нельзя отменить.')) {
+        fetch(`/api/v1/materials/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Материал успешно удален');
+                window.location.href = '/materials';
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            alert('Ошибка удаления: ' + error.message);
+        });
+    }
+}
+</script>
+{{end}} 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -87,6 +88,7 @@ func main() {
 
 	// Инициализируем контроллеры (слой адаптеров)
 	productController := controllers.NewProductController(productUseCase, materialUseCase)
+	materialController := controllers.NewMaterialController(materialUseCase)
 	calculatorController := controllers.NewCalculatorController(calculatorUseCase, materialUseCase, productUseCase)
 
 	// Создаем роутер Gin
@@ -99,21 +101,54 @@ func main() {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	router.Use(cors.New(corsConfig))
 
+	// Определяем функции для шаблонов (ДО загрузки шаблонов!)
+	router.SetFuncMap(map[string]interface{}{
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"mul": func(a, b float64) float64 {
+			return a * b
+		},
+		"div": func(a, b float64) float64 {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
+		"deref": func(ptr *float64) float64 {
+			if ptr == nil {
+				return 0
+			}
+			return *ptr
+		},
+		"formatFloat": func(ptr *float64) string {
+			if ptr == nil {
+				return "-"
+			}
+			return fmt.Sprintf("%.2f", *ptr)
+		},
+		"formatPrice": func(ptr *float64) string {
+			if ptr == nil {
+				return `<span class="no-calculation">Не рассчитано</span>`
+			}
+			return fmt.Sprintf("%.2f", *ptr)
+		},
+		"safeHTML": func(s string) interface{} {
+			return template.HTML(s)
+		},
+	})
+
 	// Загружаем шаблоны
 	router.LoadHTMLGlob("templates/*.html")
 
 	// Подключаем статические файлы
 	router.Static("/static", "./static")
 
-	// Определяем функции для шаблонов
-	router.SetFuncMap(map[string]interface{}{
-		"add": func(a, b float64) float64 {
-			return a + b
-		},
-	})
-
 	// Настраиваем маршруты (слой инфраструктуры)
-	server.SetupRoutes(router, productController, calculatorController)
+	server.SetupRoutes(router, productController, calculatorController, materialController)
 
 	// Создаем HTTP сервер
 	srv := &http.Server{

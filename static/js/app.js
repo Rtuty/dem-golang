@@ -53,59 +53,104 @@ function formatNumbers() {
 
 // Инициализация подтверждений удаления
 function initDeleteConfirmations() {
-    const deleteButtons = document.querySelectorAll('[onclick*="deleteProduct"]');
+    const deleteButtons = document.querySelectorAll('[onclick*="deleteProduct"], [onclick*="deleteMaterial"]');
     
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const productId = this.getAttribute('onclick').match(/\d+/)[0];
-            confirmDelete(productId);
+            const onclick = this.getAttribute('onclick');
+            if (onclick.includes('deleteProduct')) {
+                const productId = onclick.match(/\d+/)[0];
+                deleteProduct(productId);
+            } else if (onclick.includes('deleteMaterial')) {
+                const materialId = onclick.match(/\d+/)[0];
+                deleteMaterial(materialId);
+            }
         });
     });
 }
 
-// Подтверждение удаления продукции
-function confirmDelete(productId) {
-    if (confirm('Вы уверены, что хотите удалить эту продукцию? Это действие нельзя отменить.')) {
-        deleteProduct(productId);
+// Универсальная функция удаления элементов
+function deleteItem(type, id) {
+    const typeNames = {
+        'products': 'продукцию',
+        'materials': 'материал'
+    };
+    
+    if (confirm(`Вы уверены, что хотите удалить эту ${typeNames[type]}? Это действие нельзя отменить.`)) {
+        showLoading(true);
+        
+        fetch(`/api/v1/${type}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type');
+            
+            // Пытаемся извлечь данные независимо от статуса ответа
+            let data = null;
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.warn('Не удалось распарсить JSON ответ:', e);
+                }
+            }
+            
+            if (!response.ok) {
+                // Если есть данные с ошибкой, используем их
+                if (data && data.error) {
+                    throw new Error(data.error);
+                } else {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+            }
+            
+            if (!data) {
+                throw new Error('Сервер вернул пустой ответ');
+            }
+            
+            return data;
+        })
+        .then(data => {
+            showLoading(false);
+            
+            if (data && data.success) {
+                showNotification(`${typeNames[type].charAt(0).toUpperCase() + typeNames[type].slice(1)} успешно удален`, 'success');
+                
+                // Удаляем строку из таблицы
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                if (row) {
+                    row.remove();
+                }
+                
+                // Если больше нет элементов, перезагружаем страницу
+                const tbody = document.querySelector(`.${type.slice(0, -1)}-table tbody, .${type}-table tbody`);
+                if (tbody && tbody.children.length === 0) {
+                    location.reload();
+                }
+            } else {
+                showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+            }
+        })
+        .catch(error => {
+            showLoading(false);
+            console.error(`Ошибка удаления ${typeNames[type]}:`, error);
+            showNotification('Ошибка удаления: ' + error.message, 'error');
+        });
     }
 }
 
-// Удаление продукции через API
+// Удаление продукции через API (улучшенная версия)
 function deleteProduct(id) {
-    showLoading(true);
-    
-    fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        showLoading(false);
-        
-        if (data.message) {
-            showNotification('Продукция успешно удалена', 'success');
-            // Удаляем строку из таблицы
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (row) {
-                row.remove();
-            }
-            
-            // Если больше нет продукции, показываем пустое состояние
-            const tbody = document.querySelector('.products-table tbody');
-            if (tbody && tbody.children.length === 0) {
-                location.reload();
-            }
-        } else {
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showNotification('Ошибка удаления: ' + error.message, 'error');
-    });
+    deleteItem('products', id);
+}
+
+// Удаление материала через API (улучшенная версия)
+function deleteMaterial(id) {
+    deleteItem('materials', id);
 }
 
 // Показать/скрыть индикатор загрузки
@@ -200,12 +245,13 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Автоматически скрыть через 5 секунд
+    // Автоматически скрыть через разное время в зависимости от типа
+    const hideTimeout = type === 'success' ? 5000 : 10000; // Ошибки показываем дольше
     setTimeout(() => {
         if (notification.parentElement) {
             notification.remove();
         }
-    }, 5000);
+    }, hideTimeout);
 }
 
 // Инициализация валидации форм

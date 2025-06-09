@@ -30,18 +30,10 @@
                 <td class="product-article">{{.Article}}</td>
                 <td class="product-price">{{printf "%.2f" .MinPartnerPrice}}</td>
                 <td class="product-width">
-                    {{if .RollWidth}}
-                        {{printf "%.2f" .RollWidth}}
-                    {{else}}
-                        -
-                    {{end}}
+                    {{formatFloat .RollWidth}}
                 </td>
                 <td class="product-calculated-price">
-                    {{if .CalculatedPrice}}
-                        {{printf "%.2f" .CalculatedPrice}}
-                    {{else}}
-                        <span class="no-calculation">Не рассчитано</span>
-                    {{end}}
+                    {{formatPrice .CalculatedPrice | safeHTML}}
                 </td>
                 <td class="product-actions">
                     <a href="/products/{{.ID}}" class="btn btn-sm btn-info">Детали</a>
@@ -61,25 +53,5 @@
 </div>
 {{end}}
 
-<script>
-function deleteProduct(id) {
-    if (confirm('Вы уверены, что хотите удалить эту продукцию?')) {
-        fetch(`/products/${id}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                alert('Продукция успешно удалена');
-                location.reload();
-            } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-            }
-        })
-        .catch(error => {
-            alert('Ошибка удаления: ' + error.message);
-        });
-    }
-}
-</script>
+
 {{end}} 

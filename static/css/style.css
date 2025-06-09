@@ -499,4 +499,43 @@ body {
     .page-header h2 {
         font-size: 1.5rem;
     }
+}
+
+/* Дополнительные стили для форм */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-half {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-group-half {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Стили для группировки кнопок в заголовке */
+.page-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Стили для действий с материалами */
+.material-actions {
+    white-space: nowrap;
+}
+
+.material-actions .btn {
+    margin-right: 0.25rem;
 } 

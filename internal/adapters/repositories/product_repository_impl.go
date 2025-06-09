@@ -179,6 +179,31 @@ func (r *productRepositoryImpl) Update(product *entities.Product) error {
 
 // Delete удаляет продукцию
 func (r *productRepositoryImpl) Delete(id int) error {
+	// Сначала проверяем, нет ли связанных записей в order_items
+	var orderItemsCount int
+	checkOrderItemsQuery := "SELECT COUNT(*) FROM order_items WHERE product_id = $1"
+	err := r.db.QueryRow(checkOrderItemsQuery, id).Scan(&orderItemsCount)
+	if err != nil {
+		return fmt.Errorf("ошибка проверки связанных заказов: %w", err)
+	}
+
+	if orderItemsCount > 0 {
+		return fmt.Errorf("невозможно удалить продукцию: она используется в %d заказе(ах). Сначала удалите связанные заказы или исключите продукцию из них", orderItemsCount)
+	}
+
+	// Проверяем наличие в истории продаж
+	var salesHistoryCount int
+	checkSalesQuery := "SELECT COUNT(*) FROM sales_history WHERE product_id = $1"
+	err = r.db.QueryRow(checkSalesQuery, id).Scan(&salesHistoryCount)
+	if err != nil {
+		return fmt.Errorf("ошибка проверки истории продаж: %w", err)
+	}
+
+	if salesHistoryCount > 0 {
+		return fmt.Errorf("невозможно удалить продукцию: есть история продаж (%d записей). Данная продукция имеет коммерческую историю и не может быть удалена", salesHistoryCount)
+	}
+
+	// Если никаких связей нет, удаляем продукцию
 	query := "DELETE FROM products WHERE id = $1"
 
 	result, err := r.db.Exec(query, id)
@@ -255,7 +280,7 @@ func (r *productRepositoryImpl) GetMaterialsForProduct(productID int) ([]entitie
 			m.measurement_unit_id, m.package_quantity, m.cost_per_unit,
 			m.stock_quantity, m.min_stock_quantity, m.image_path,
 			m.created_at, m.updated_at,
-			mu.id, mu.name, mu.abbreviation, mu.created_at
+			mu.id, mu.name, mu.symbol as abbreviation, mu.created_at
 		FROM product_materials pm
 		JOIN materials m ON pm.material_id = m.id
 		JOIN measurement_units mu ON m.measurement_unit_id = mu.id

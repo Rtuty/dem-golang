@@ -195,7 +195,7 @@ func (suite *ProductControllerTestSuite) TestCreateProduct_Success() {
 		Article:         "ART003",
 		ProductTypeID:   1,
 		Name:            "Новые обои",
-		Description:     stringPtr("Описание"),
+		Description:     "Описание",
 		MinPartnerPrice: 150.0,
 		RollWidth:       float64Ptr(1.06),
 	}

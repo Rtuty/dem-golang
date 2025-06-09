@@ -11,6 +11,7 @@ func SetupRoutes(
 	router *gin.Engine,
 	productController *controllers.ProductController,
 	calculatorController *controllers.CalculatorController,
+	materialController *controllers.MaterialController,
 ) {
 	// Главная страница - перенаправление на продукцию
 	router.GET("/", func(c *gin.Context) {
@@ -18,10 +19,10 @@ func SetupRoutes(
 	})
 
 	// Веб-страницы
-	setupWebRoutes(router, productController, calculatorController)
+	setupWebRoutes(router, productController, calculatorController, materialController)
 
 	// API маршруты
-	setupAPIRoutes(router, productController, calculatorController)
+	setupAPIRoutes(router, productController, calculatorController, materialController)
 }
 
 // setupWebRoutes настраивает веб-маршруты
@@ -29,10 +30,23 @@ func setupWebRoutes(
 	router *gin.Engine,
 	productController *controllers.ProductController,
 	calculatorController *controllers.CalculatorController,
+	materialController *controllers.MaterialController,
 ) {
 	// Продукция
 	router.GET("/products", productController.GetProductsPage)
+	router.GET("/products/new", productController.GetCreateProductPage)
+	router.POST("/products", productController.CreateProductWeb)
+	router.GET("/products/:id/edit", productController.GetEditProductPage)
+	router.POST("/products/:id", productController.UpdateProductWeb)
 	router.GET("/products/:id", productController.GetProductDetailsPage)
+
+	// Материалы
+	router.GET("/materials", materialController.GetMaterialsPage)
+	router.GET("/materials/new", materialController.GetCreateMaterialPage)
+	router.POST("/materials", materialController.CreateMaterialWeb)
+	router.GET("/materials/:id/edit", materialController.GetEditMaterialPage)
+	router.POST("/materials/:id", materialController.UpdateMaterialWeb)
+	router.GET("/materials/:id", materialController.GetMaterialDetailsPage)
 
 	// Калькулятор
 	router.GET("/calculator", calculatorController.GetCalculatorPage)
@@ -44,6 +58,7 @@ func setupAPIRoutes(
 	router *gin.Engine,
 	productController *controllers.ProductController,
 	calculatorController *controllers.CalculatorController,
+	materialController *controllers.MaterialController,
 ) {
 	api := router.Group("/api/v1")
 	{
@@ -57,10 +72,25 @@ func setupAPIRoutes(
 			products.DELETE("/:id", productController.DeleteProduct)
 		}
 
+		// Материалы API
+		materials := api.Group("/materials")
+		{
+			materials.GET("", materialController.GetMaterials)
+			materials.GET("/:id", materialController.GetMaterialByID)
+			materials.POST("", materialController.CreateMaterial)
+			materials.PUT("/:id", materialController.UpdateMaterial)
+			materials.DELETE("/:id", materialController.DeleteMaterial)
+		}
+
 		// Калькулятор API
 		calculator := api.Group("/calculator")
 		{
 			calculator.POST("/calculate", calculatorController.CalculateMaterialAPI)
 		}
+
+		// Справочники API
+		api.GET("/product-types", productController.GetProductTypes)
+		api.GET("/material-types", materialController.GetMaterialTypes)
+		api.GET("/measurement-units", materialController.GetMeasurementUnits)
 	}
 }

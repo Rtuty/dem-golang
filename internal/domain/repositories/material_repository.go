@@ -10,6 +10,15 @@ type MaterialRepository interface {
 	// GetByID возвращает материал по ID
 	GetByID(id int) (*entities.Material, error)
 
+	// Create создает новый материал
+	Create(material *entities.Material) error
+
+	// Update обновляет существующий материал
+	Update(material *entities.Material) error
+
+	// Delete удаляет материал по ID
+	Delete(id int) error
+
 	// GetMaterialTypeByID возвращает тип материала по ID
 	GetMaterialTypeByID(id int) (*entities.MaterialType, error)
 
@@ -18,6 +27,9 @@ type MaterialRepository interface {
 
 	// GetMaterialTypes возвращает все типы материалов
 	GetMaterialTypes() ([]entities.MaterialType, error)
+
+	// GetMeasurementUnits возвращает все единицы измерения
+	GetMeasurementUnits() ([]entities.MeasurementUnit, error)
 
 	// GetMaterialsForProduct возвращает материалы для конкретной продукции
 	GetMaterialsForProduct(productID int) ([]entities.Material, error)

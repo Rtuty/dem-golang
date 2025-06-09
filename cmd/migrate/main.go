@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"wallpaper-system/internal/config"
+	"wallpaper-system/internal/infrastructure/config"
 
 	_ "github.com/lib/pq"
 )

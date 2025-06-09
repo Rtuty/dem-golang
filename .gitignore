@@ -76,13 +76,7 @@ jspm_packages/
 tmp/
 temp/
 
-# Database
-*.sqlite
-*.sqlite3
-*.db
-
 # Backup files
-*.sql
 backup_*
 
 # Docker
@@ -102,3 +96,17 @@ testdata/output/
 
 # Documentation build
 docs/_build/
+
+# Application binaries (after refactoring)
+wallpaper-app
+wallpaper-system.exe*
+
+# Test HTML files (moved to static)
+test_*.html
+
+# Deprecated/unused directories
+internal/handlers/
+internal/models/
+
+# Static file duplicates
+static/js/delete-utils.js
