@@ -86,18 +86,33 @@ function deleteItem(type, id) {
                 'Content-Type': 'application/json',
             },
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        .then(async response => {
+            const contentType = response.headers.get('content-type');
+            
+            // Пытаемся извлечь данные независимо от статуса ответа
+            let data = null;
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.warn('Не удалось распарсить JSON ответ:', e);
+                }
             }
             
-            // Проверяем, является ли ответ JSON
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                return response.json();
-            } else {
-                throw new Error('Сервер вернул не JSON ответ');
+            if (!response.ok) {
+                // Если есть данные с ошибкой, используем их
+                if (data && data.error) {
+                    throw new Error(data.error);
+                } else {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
             }
+            
+            if (!data) {
+                throw new Error('Сервер вернул пустой ответ');
+            }
+            
+            return data;
         })
         .then(data => {
             showLoading(false);
@@ -117,7 +132,7 @@ function deleteItem(type, id) {
                     location.reload();
                 }
             } else {
-                showNotification('Ошибка: ' + (data && data.error ? data.error : 'Неизвестная ошибка'), 'error');
+                showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
             }
         })
         .catch(error => {
@@ -230,12 +245,13 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Автоматически скрыть через 5 секунд
+    // Автоматически скрыть через разное время в зависимости от типа
+    const hideTimeout = type === 'success' ? 5000 : 10000; // Ошибки показываем дольше
     setTimeout(() => {
         if (notification.parentElement) {
             notification.remove();
         }
-    }, 5000);
+    }, hideTimeout);
 }
 
 // Инициализация валидации форм

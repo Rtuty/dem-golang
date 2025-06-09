@@ -37,10 +37,34 @@ func (m *MockMaterialUseCase) GetMaterialByID(id int) (*entities.Material, error
 	return args.Get(0).(*entities.Material), args.Error(1)
 }
 
+// CreateMaterial создает новый материал
+func (m *MockMaterialUseCase) CreateMaterial(material *entities.Material) error {
+	args := m.Called(material)
+	return args.Error(0)
+}
+
+// UpdateMaterial обновляет существующий материал
+func (m *MockMaterialUseCase) UpdateMaterial(material *entities.Material) error {
+	args := m.Called(material)
+	return args.Error(0)
+}
+
+// DeleteMaterial удаляет материал
+func (m *MockMaterialUseCase) DeleteMaterial(id int) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
 // GetMaterialTypes возвращает все типы материалов
 func (m *MockMaterialUseCase) GetMaterialTypes() ([]entities.MaterialType, error) {
 	args := m.Called()
 	return args.Get(0).([]entities.MaterialType), args.Error(1)
+}
+
+// GetMeasurementUnits возвращает все единицы измерения
+func (m *MockMaterialUseCase) GetMeasurementUnits() ([]entities.MeasurementUnit, error) {
+	args := m.Called()
+	return args.Get(0).([]entities.MeasurementUnit), args.Error(1)
 }
 
 // GetMaterialsForProduct возвращает материалы для конкретной продукции
