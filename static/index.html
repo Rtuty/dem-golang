@@ -169,6 +169,29 @@
             padding: 2rem 0;
         }
 
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background-color: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background-color: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -244,50 +267,42 @@
 
         <div class="footer">
             <p>&copy; 2024 Наш декор. Система управления производством обоев</p>
-            <p>Версия: 2.0 | Clean Architecture</p>
+            <p>Версия: 2.1 | Clean Architecture | Оптимизированный фронтенд</p>
+            <div id="server-status" style="margin-top: 1rem;">
+                <span id="status-indicator" class="status-indicator"></span>
+                <span id="status-text">Проверка соединения с сервером...</span>
+            </div>
         </div>
     </div>
 
     <script>
         // Проверка доступности сервера
         async function checkServerStatus() {
+            const indicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            
             try {
                 const response = await fetch('http://localhost:8080/api/v1/products');
                 if (response.ok) {
+                    indicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'Сервер доступен';
                     console.log('✅ Сервер доступен');
                 } else {
-                    console.warn('⚠️ Сервер отвечает с ошибкой:', response.status);
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
+                indicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'Сервер недоступен';
                 console.warn('❌ Сервер недоступен:', error.message);
-                // Показываем уведомление пользователю
-                const notice = document.createElement('div');
-                notice.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: #dc3545;
-                    color: white;
-                    padding: 1rem;
-                    border-radius: 8px;
-                    z-index: 1000;
-                    max-width: 300px;
-                `;
-                notice.innerHTML = `
-                    <strong>⚠️ Внимание!</strong><br>
-                    Сервер недоступен. Убедитесь, что приложение запущено на localhost:8080
-                `;
-                document.body.appendChild(notice);
-                
-                // Автоматически скрыть через 10 секунд
-                setTimeout(() => {
-                    notice.remove();
-                }, 10000);
             }
         }
 
         // Проверяем статус при загрузке страницы
-        document.addEventListener('DOMContentLoaded', checkServerStatus);
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServerStatus();
+            // Повторная проверка каждые 30 секунд
+            setInterval(checkServerStatus, 30000);
+        });
     </script>
 </body>
 </html> 

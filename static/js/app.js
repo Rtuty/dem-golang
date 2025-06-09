@@ -53,110 +53,89 @@ function formatNumbers() {
 
 // Инициализация подтверждений удаления
 function initDeleteConfirmations() {
-    const deleteButtons = document.querySelectorAll('[onclick*="deleteProduct"]');
+    const deleteButtons = document.querySelectorAll('[onclick*="deleteProduct"], [onclick*="deleteMaterial"]');
     
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const productId = this.getAttribute('onclick').match(/\d+/)[0];
-            confirmDelete(productId);
+            const onclick = this.getAttribute('onclick');
+            if (onclick.includes('deleteProduct')) {
+                const productId = onclick.match(/\d+/)[0];
+                deleteProduct(productId);
+            } else if (onclick.includes('deleteMaterial')) {
+                const materialId = onclick.match(/\d+/)[0];
+                deleteMaterial(materialId);
+            }
         });
     });
 }
 
-// Подтверждение удаления продукции
-function confirmDelete(productId) {
-    if (confirm('Вы уверены, что хотите удалить эту продукцию? Это действие нельзя отменить.')) {
-        deleteProduct(productId);
+// Универсальная функция удаления элементов
+function deleteItem(type, id) {
+    const typeNames = {
+        'products': 'продукцию',
+        'materials': 'материал'
+    };
+    
+    if (confirm(`Вы уверены, что хотите удалить эту ${typeNames[type]}? Это действие нельзя отменить.`)) {
+        showLoading(true);
+        
+        fetch(`/api/v1/${type}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Проверяем, является ли ответ JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                throw new Error('Сервер вернул не JSON ответ');
+            }
+        })
+        .then(data => {
+            showLoading(false);
+            
+            if (data && data.success) {
+                showNotification(`${typeNames[type].charAt(0).toUpperCase() + typeNames[type].slice(1)} успешно удален`, 'success');
+                
+                // Удаляем строку из таблицы
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                if (row) {
+                    row.remove();
+                }
+                
+                // Если больше нет элементов, перезагружаем страницу
+                const tbody = document.querySelector(`.${type.slice(0, -1)}-table tbody, .${type}-table tbody`);
+                if (tbody && tbody.children.length === 0) {
+                    location.reload();
+                }
+            } else {
+                showNotification('Ошибка: ' + (data && data.error ? data.error : 'Неизвестная ошибка'), 'error');
+            }
+        })
+        .catch(error => {
+            showLoading(false);
+            console.error(`Ошибка удаления ${typeNames[type]}:`, error);
+            showNotification('Ошибка удаления: ' + error.message, 'error');
+        });
     }
 }
 
-// Удаление продукции через API
+// Удаление продукции через API (улучшенная версия)
 function deleteProduct(id) {
-    showLoading(true);
-    
-    fetch(`/api/v1/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        showLoading(false);
-        
-        if (data.success || data.message) {
-            showNotification('Продукция успешно удалена', 'success');
-            // Удаляем строку из таблицы
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (row) {
-                row.remove();
-            }
-            
-            // Если больше нет продукции, показываем пустое состояние
-            const tbody = document.querySelector('.products-table tbody');
-            if (tbody && tbody.children.length === 0) {
-                location.reload();
-            }
-        } else {
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showNotification('Ошибка удаления: ' + error.message, 'error');
-    });
+    deleteItem('products', id);
 }
 
-// Удаление материала через API
+// Удаление материала через API (улучшенная версия)
 function deleteMaterial(id) {
-    if (!confirm('Вы уверены, что хотите удалить этот материал?')) {
-        return;
-    }
-    
-    showLoading(true);
-    
-    fetch(`/api/v1/materials/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        showLoading(false);
-        
-        if (data.success || data.message) {
-            showNotification('Материал успешно удален', 'success');
-            // Удаляем строку из таблицы
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (row) {
-                row.remove();
-            }
-            
-            // Если больше нет материалов, показываем пустое состояние
-            const tbody = document.querySelector('.materials-table tbody');
-            if (tbody && tbody.children.length === 0) {
-                location.reload();
-            }
-        } else {
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showNotification('Ошибка удаления: ' + error.message, 'error');
-    });
+    deleteItem('materials', id);
 }
 
 // Показать/скрыть индикатор загрузки
